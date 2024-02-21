@@ -8,7 +8,7 @@
     "build": "ncc build -o dist ./src/index.ts"
   },
   "bin": {
-    "faq": "./bin/cli.js"
+    "fq": "./bin/cli.js"
   },
   "files": [
     "dist",

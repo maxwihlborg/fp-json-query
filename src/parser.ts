@@ -14,7 +14,7 @@ interface ParseOk<T> {
 type Tokens = readonly string[];
 
 type ParserResult<T> = ParseError | ParseOk<T>;
-type InferParserResult<T> = [T] extends [Parser<infer R>] ? R : never;
+export type InferParserResult<T> = [T] extends [Parser<infer R>] ? R : never;
 
 export interface Parser<T> {
   (offset: number, tokens: Tokens): ParserResult<T>;
