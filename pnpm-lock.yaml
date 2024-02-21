@@ -1,0 +1,126 @@
+lockfileVersion: '6.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+devDependencies:
+  '@tsconfig/node18':
+    specifier: ^18.2.2
+    version: 18.2.2
+  '@types/node':
+    specifier: ^20.11.19
+    version: 20.11.19
+  '@vercel/ncc':
+    specifier: ^0.38.1
+    version: 0.38.1
+  cac:
+    specifier: ^6.7.14
+    version: 6.7.14
+  fp-ts:
+    specifier: ^2.16.2
+    version: 2.16.2
+  fp-ts-std:
+    specifier: ^0.18.0
+    version: 0.18.0(fp-ts@2.16.2)(monocle-ts@2.3.13)(newtype-ts@0.3.5)
+  fp-ts-stream:
+    specifier: ^0.1.11
+    version: 0.1.11(fp-ts@2.16.2)(tslib@2.6.2)
+  parsinator:
+    specifier: ^2.1.2
+    version: 2.1.2
+  remeda:
+    specifier: ^1.43.0
+    version: 1.43.0
+  typescript:
+    specifier: ^5.3.3
+    version: 5.3.3
+
+packages:
+
+  /@tsconfig/node18@18.2.2:
+    resolution: {integrity: sha512-d6McJeGsuoRlwWZmVIeE8CUA27lu6jLjvv1JzqmpsytOYYbVi1tHZEnwCNVOXnj4pyLvneZlFlpXUK+X9wBWyw==}
+    dev: true
+
+  /@types/node@20.11.19:
+    resolution: {integrity: sha512-7xMnVEcZFu0DikYjWOlRq7NTPETrm7teqUT2WkQjrTIkEgUyyGdWsj/Zg8bEJt5TNklzbPD1X3fqfsHw3SpapQ==}
+    dependencies:
+      undici-types: 5.26.5
+    dev: true
+
+  /@vercel/ncc@0.38.1:
+    resolution: {integrity: sha512-IBBb+iI2NLu4VQn3Vwldyi2QwaXt5+hTyh58ggAMoCGE6DJmPvwL3KPBWcJl1m9LYPChBLE980Jw+CS4Wokqxw==}
+    hasBin: true
+    dev: true
+
+  /cac@6.7.14:
+    resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
+    engines: {node: '>=8'}
+    dev: true
+
+  /fp-ts-std@0.18.0(fp-ts@2.16.2)(monocle-ts@2.3.13)(newtype-ts@0.3.5):
+    resolution: {integrity: sha512-p++ozPuLFTJIhqdfT2gAaC1b5bW0hiSfGifM8wmVBYOLJjfxMF9Ak3HtKg6vtOwt9Id1LYlQNsTy4x6NpjJ4fA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      fp-ts: ^2.16.0
+      monocle-ts: ^2.3.0
+      newtype-ts: ^0.3.0
+    dependencies:
+      fp-ts: 2.16.2
+      monocle-ts: 2.3.13(fp-ts@2.16.2)
+      newtype-ts: 0.3.5(fp-ts@2.16.2)(monocle-ts@2.3.13)
+    dev: true
+
+  /fp-ts-stream@0.1.11(fp-ts@2.16.2)(tslib@2.6.2):
+    resolution: {integrity: sha512-NqIZ9rZJgadhBVeeZdkwp3U9RaEn4W24U5T9PQPJ8s85+0pd1pI2MCiLJNLwWk9R6ZPbWYWBf4VFjcael4S1Lg==}
+    peerDependencies:
+      fp-ts: '>= 2.12.0'
+      tslib: '>= 2.4'
+    dependencies:
+      fp-ts: 2.16.2
+      tslib: 2.6.2
+    dev: true
+
+  /fp-ts@2.16.2:
+    resolution: {integrity: sha512-CkqAjnIKFqvo3sCyoBTqgJvF+bHrSik584S9nhTjtBESLx26cbtVMR/T9a6ApChOcSDAaM3JydDmWDUn4EEXng==}
+    dev: true
+
+  /monocle-ts@2.3.13(fp-ts@2.16.2):
+    resolution: {integrity: sha512-D5Ygd3oulEoAm3KuGO0eeJIrhFf1jlQIoEVV2DYsZUMz42j4tGxgct97Aq68+F8w4w4geEnwFa8HayTS/7lpKQ==}
+    peerDependencies:
+      fp-ts: ^2.5.0
+    dependencies:
+      fp-ts: 2.16.2
+    dev: true
+
+  /newtype-ts@0.3.5(fp-ts@2.16.2)(monocle-ts@2.3.13):
+    resolution: {integrity: sha512-v83UEQMlVR75yf1OUdoSFssjitxzjZlqBAjiGQ4WJaML8Jdc68LJ+BaSAXUmKY4bNzp7hygkKLYTsDi14PxI2g==}
+    peerDependencies:
+      fp-ts: ^2.0.0
+      monocle-ts: ^2.0.0
+    dependencies:
+      fp-ts: 2.16.2
+      monocle-ts: 2.3.13(fp-ts@2.16.2)
+    dev: true
+
+  /parsinator@2.1.2:
+    resolution: {integrity: sha512-I0/5+Q4c1Olhl0s7aQY2eAbJ/Vn7B0JCZqMxHfuBbmF0XA5xtyRVUYG98/3Wn46HPOLzdUvr7i6zvcnBWCIMag==}
+    dev: true
+
+  /remeda@1.43.0:
+    resolution: {integrity: sha512-YMGznJxotoGxoWH15H5v0DtceM+rKsGSO43+qULtPlFJSJ87ZWOHC1JP4iXQmVO9ZT5JFT0SPZQaZUpn4FXJbw==}
+    dev: true
+
+  /tslib@2.6.2:
+    resolution: {integrity: sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==}
+    dev: true
+
+  /typescript@5.3.3:
+    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
+
+  /undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+    dev: true

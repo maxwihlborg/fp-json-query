@@ -1,0 +1,31 @@
+{
+  "name": "fp-ts-json-query",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "ncc build -o dist ./src/index.ts"
+  },
+  "bin": {
+    "faq": "./bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "keywords": [],
+  "license": "MIT",
+  "devDependencies": {
+    "@tsconfig/node18": "^18.2.2",
+    "@types/node": "^20.11.19",
+    "@vercel/ncc": "^0.38.1",
+    "cac": "^6.7.14",
+    "fp-ts": "^2.16.2",
+    "fp-ts-std": "^0.18.0",
+    "fp-ts-stream": "^0.1.11",
+    "parsinator": "^2.1.2",
+    "remeda": "^1.43.0",
+    "typescript": "^5.3.3"
+  }
+}
