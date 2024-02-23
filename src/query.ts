@@ -17,7 +17,8 @@ export namespace Ast {
     rhs: [
       op:
         | p.InferParserResult<typeof token.Z_ADD_OPS>
-        | p.InferParserResult<typeof token.Z_MUL_OPS>,
+        | p.InferParserResult<typeof token.Z_MUL_OPS>
+        | p.InferParserResult<typeof token.Z_LOG_OPS>,
       val: Expr,
     ][];
   };
@@ -60,19 +61,18 @@ const LEXER_RE = p.joinRes(
 );
 
 const token = {
-  AMP_D: p.lit("&&"),
-  BANG_D: p.lit("!!"),
   BANG: p.lit("!"),
+  BANG_D: p.lit("!!"),
   COMMA: p.lit(","),
   DOT: p.lit("."),
   MINUS: p.lit("-"),
   PARAN_L: p.lit("("),
   PARAN_R: p.lit(")"),
   PIPE: p.lit("|"),
-  PIPE_D: p.lit("||"),
-  Z_MUL_OPS: p.enum(["*", "/"]),
   Z_ADD_OPS: p.enum(["-", "+"]),
   Z_CMP_OPS: p.enum(["==", "!=", ">", ">=", "<", "<="]),
+  Z_LOG_OPS: p.enum(["&&", "||"]),
+  Z_MUL_OPS: p.enum(["*", "/"]),
 } as const;
 
 const node = {
@@ -134,12 +134,23 @@ const parseFuncCall: p.Parser<Ast.FuncCall> = p.lazy(() =>
         return node.fn("get", norm.split(".").map(node.id));
       },
     ),
-    p.map(p.lit("."), () => node.fn("id", [])),
+    p.map(token.DOT, () => node.fn("id", [])),
   ]),
 );
 
-const parseExpression: p.Parser<Ast.Expr> = p.lazy(
-  () => parseEqualityExpression,
+const parseExpression: p.Parser<Ast.Expr> = p.lazy(() => parseLogicalExpr);
+
+const parseLogicalExpr: p.Parser<Ast.Expr> = p.lazy(() =>
+  p.oneOf([
+    p.map(
+      p.tuple([
+        parseEqualityExpression,
+        p.many1(p.tuple([token.Z_LOG_OPS, parseEqualityExpression])),
+      ]),
+      ([lhs, rhs]) => node.biOp(lhs, rhs),
+    ),
+    parseEqualityExpression,
+  ]),
 );
 
 const parseEqualityExpression: p.Parser<Ast.Expr> = p.lazy(() =>
@@ -190,7 +201,7 @@ const parsePrimaryExpr: p.Parser<Ast.Expr> = p.lazy(() =>
     parseNum,
     parseFuncCall,
     parseId,
-    p.map(p.tuple([token.BANG, parsePrimaryExpr]), ([_, rhs]) =>
+    p.map(p.tuple([token.BANG, parseExpression]), ([_, rhs]) =>
       node.fn("not", [rhs]),
     ),
     p.map(p.tuple([token.MINUS, parsePrimaryExpr]), ([_, rhs]) =>
