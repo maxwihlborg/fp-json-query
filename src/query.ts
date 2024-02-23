@@ -14,13 +14,12 @@ export namespace Ast {
   export type BinaryOp = {
     t: AstType.BinaryOp;
     lhs: Expr;
-    rhs: [
-      op:
-        | p.InferParserResult<typeof token.Z_ADD_OPS>
-        | p.InferParserResult<typeof token.Z_MUL_OPS>
-        | p.InferParserResult<typeof token.Z_LOG_OPS>,
-      val: Expr,
-    ][];
+    op:
+      | p.InferParserResult<typeof token.Z_ADD_OPS>
+      | p.InferParserResult<typeof token.Z_MUL_OPS>
+      | p.InferParserResult<typeof token.Z_CMP_OPS>
+      | p.InferParserResult<typeof token.Z_LOG_OPS>;
+    rhs: Expr;
   };
 
   export type FuncCall = {
@@ -29,14 +28,7 @@ export namespace Ast {
     args: Expr[];
   };
 
-  export type Predicate = {
-    t: AstType.Predicate;
-    op: p.InferParserResult<typeof token.Z_CMP_OPS>;
-    lhs: Expr;
-    rhs: Expr;
-  };
-
-  export type Expr = Num | ID | BinaryOp | FuncCall | Predicate;
+  export type Expr = Num | ID | BinaryOp | FuncCall;
 }
 
 enum AstType {
@@ -44,8 +36,12 @@ enum AstType {
   ID,
   BinaryOp,
   FuncCall,
-  Predicate,
 }
+
+const FUNC_RE = p.joinRes([
+  /\.?\w+(:?\.\w+)+/, // foo.bar or .foo.bar
+  /\.\w+/, // .foo
+]);
 
 const LEXER_RE = p.joinRes(
   [
@@ -53,9 +49,11 @@ const LEXER_RE = p.joinRes(
     /\|\|/,
     /\&\&/,
     /[(),|<>/*+\-!]/,
+    FUNC_RE,
     p.NUM_RE,
-    /\.\w*/,
-    /\w+(:?\.\w+)*/,
+    p.STR_LIT_RE,
+    p.STR_RE,
+    /\./,
   ],
   "g",
 );
@@ -89,19 +87,14 @@ const node = {
     name,
     args,
   }),
-  biOp: (lhs: Ast.Expr, rhs: Ast.BinaryOp["rhs"]): Ast.BinaryOp => ({
+  binOp: (
+    lhs: Ast.Expr,
+    op: Ast.BinaryOp["op"],
+    rhs: Ast.Expr,
+  ): Ast.BinaryOp => ({
     t: AstType.BinaryOp,
     lhs,
-    rhs,
-  }),
-  pred: (
-    lhs: Ast.Expr,
-    op: Ast.Predicate["op"],
-    rhs: Ast.Expr,
-  ): Ast.Predicate => ({
-    t: AstType.Predicate,
     op,
-    lhs,
     rhs,
   }),
 };
@@ -109,8 +102,8 @@ const node = {
 const parseNum = p.map<number, Ast.Num>(p.num(), (val) => node.num(val));
 const parseId = p.map<string, Ast.ID>(p.str(), (val) => node.id(val));
 
-const parseFuncCall: p.Parser<Ast.FuncCall> = p.lazy(() =>
-  p.oneOf([
+const parseFuncCall: p.Parser<Ast.FuncCall> = p.lazy(() => {
+  const fn = p.oneOf([
     p.map(
       p.tuple([
         parseId,
@@ -120,34 +113,30 @@ const parseFuncCall: p.Parser<Ast.FuncCall> = p.lazy(() =>
       ]),
       ([name, _, args]) => node.fn(name.val, args),
     ),
-    p.map(
-      p.regex(
-        p.wrapRe(
-          p.joinRes([
-            /\.\w+/, // .foo
-            /\.?\w+(:?\.\w+)+/, // foo.bar or .foo.bar
-          ]),
-        ),
-      ),
-      (val) => {
-        const norm = val.startsWith(".") ? val.substring(1) : val;
-        return node.fn("get", norm.split(".").map(node.id));
-      },
-    ),
+    p.map(p.regex(p.wrapRe(FUNC_RE)), (val) => {
+      const norm = val.startsWith(".") ? val.substring(1) : val;
+      return node.fn("get", norm.split(".").map(node.id));
+    }),
     p.map(token.DOT, () => node.fn("id", [])),
-  ]),
-);
+  ]);
+
+  return p.map(p.sep1(token.PIPE, fn), (n) => {
+    switch (n.length) {
+      case 1:
+        return n[0];
+      default:
+        return node.fn("flow", n);
+    }
+  });
+});
 
 const parseExpression: p.Parser<Ast.Expr> = p.lazy(() => parseLogicalExpr);
 
 const parseLogicalExpr: p.Parser<Ast.Expr> = p.lazy(() =>
   p.oneOf([
     p.map(
-      p.tuple([
-        parseEqualityExpression,
-        p.many1(p.tuple([token.Z_LOG_OPS, parseEqualityExpression])),
-      ]),
-      ([lhs, rhs]) => node.biOp(lhs, rhs),
+      p.tuple([parseEqualityExpression, token.Z_LOG_OPS, parseLogicalExpr]),
+      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
     ),
     parseEqualityExpression,
   ]),
@@ -157,23 +146,20 @@ const parseEqualityExpression: p.Parser<Ast.Expr> = p.lazy(() =>
   p.oneOf([
     p.map(
       p.tuple([parseAddativeExpr, token.Z_CMP_OPS, parseAddativeExpr]),
-      ([lhs, op, rhs]) => node.pred(lhs, op, rhs),
+      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
+    ),
+    p.map(token.BANG_D, () =>
+      node.binOp(node.fn("id", []), "!=", node.id("null")),
     ),
     parseAddativeExpr,
-    p.map(token.BANG_D, () =>
-      node.pred(node.fn("id", []), "!=", node.id("null")),
-    ),
   ]),
 );
 
 const parseAddativeExpr: p.Parser<Ast.Expr> = p.lazy(() =>
   p.oneOf([
     p.map(
-      p.tuple([
-        parseMultiplicativeExpr,
-        p.many1(p.tuple([token.Z_ADD_OPS, parseMultiplicativeExpr])),
-      ]),
-      ([lhs, rhs]) => node.biOp(lhs, rhs),
+      p.tuple([parseMultiplicativeExpr, token.Z_ADD_OPS, parseAddativeExpr]),
+      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
     ),
     parseMultiplicativeExpr,
   ]),
@@ -182,11 +168,8 @@ const parseAddativeExpr: p.Parser<Ast.Expr> = p.lazy(() =>
 const parseMultiplicativeExpr: p.Parser<Ast.Expr> = p.lazy(() =>
   p.oneOf([
     p.map(
-      p.tuple([
-        parsePrimaryExpr,
-        p.many1(p.tuple([token.Z_MUL_OPS, parsePrimaryExpr])),
-      ]),
-      ([lhs, rhs]) => node.biOp(lhs, rhs),
+      p.tuple([parsePrimaryExpr, token.Z_MUL_OPS, parseMultiplicativeExpr]),
+      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
     ),
     parsePrimaryExpr,
   ]),
@@ -199,18 +182,19 @@ const parsePrimaryExpr: p.Parser<Ast.Expr> = p.lazy(() =>
       ([_, e]) => e,
     ),
     parseNum,
+    p.map(p.strLit(), (val) => node.id(val)),
     parseFuncCall,
     parseId,
     p.map(p.tuple([token.BANG, parseExpression]), ([_, rhs]) =>
       node.fn("not", [rhs]),
     ),
     p.map(p.tuple([token.MINUS, parsePrimaryExpr]), ([_, rhs]) =>
-      node.biOp(node.num(-1), [["*", rhs]]),
+      node.binOp(node.num(-1), "*", rhs),
     ),
   ]),
 );
 
-const parseQuery: p.Parser<Ast.FuncCall[]> = p.sep(token.PIPE, parseFuncCall);
+const parseQuery: p.Parser<Ast.FuncCall> = p.lazy(() => parseFuncCall);
 
 export const parse = p.make(LEXER_RE, parseQuery);
 
@@ -218,30 +202,98 @@ export const show = (e: Ast.Expr) => {
   function* step(p: string, e: Ast.Expr): IterableIterator<string> {
     switch (e.t) {
       case AstType.Num:
-        yield `${p}nr: ${e.val}`;
+        yield `${p}(nr: ${e.val})`;
         break;
       case AstType.ID:
-        yield `${p}id: ${e.val}`;
-        break;
-      case AstType.Predicate:
-        yield `${p}cn: ${e.op}`;
-        yield* step(p + "  ", e.lhs);
-        yield* step(p + "  ", e.rhs);
+        yield `${p}(id: ${e.val})`;
         break;
       case AstType.BinaryOp:
-        yield* step(p, e.lhs);
-        for (const [o, r] of e.rhs) {
-          yield `${p}  bi: ${o}`;
-          yield* step(p + "  ", r);
-        }
+        yield `${p}(${e.op}`;
+        yield* step(p + "  ", e.lhs);
+        yield* step(p + "  ", e.rhs);
+        yield `${p})`;
         break;
       case AstType.FuncCall:
-        yield `${p}fn: ${e.name}`;
+        yield `${p}(fn: ${e.name}`;
         for (const a of e.args) {
           yield* step(p + "  ", a);
         }
+        yield `${p})`;
         break;
     }
   }
   return Array.from(step("", e)).join("\n");
+};
+
+export const compile = (main: Ast.FuncCall): Ast.Expr => {
+  function step(e: Ast.Expr): Ast.Expr {
+    switch (e.t) {
+      case AstType.Num:
+      case AstType.ID:
+        return e;
+      case AstType.FuncCall: {
+        return node.fn(e.name, e.args.map(step));
+      }
+      case AstType.BinaryOp: {
+        const a = step(e.lhs);
+        const b = step(e.rhs);
+        if (a.t === AstType.Num && b.t === AstType.Num) {
+          switch (e.op) {
+            case "-":
+              return node.num(a.val - b.val);
+            case "+":
+              return node.num(a.val + b.val);
+            case "*":
+              return node.num(a.val * b.val);
+            case "/":
+              return node.num(a.val / b.val);
+            case "==":
+              return node.num(Number(a.val === b.val));
+            case "!=":
+              return node.num(Number(a.val != b.val));
+            case ">":
+              return node.num(Number(a.val > b.val));
+            case ">=":
+              return node.num(Number(a.val >= b.val));
+            case "<":
+              return node.num(Number(a.val < b.val));
+            case "<=":
+              return node.num(Number(a.val <= b.val));
+            case "&&":
+              return node.num(a.val && b.val);
+            case "||":
+              return node.num(a.val || b.val);
+          }
+        }
+        switch (e.op) {
+          case "-":
+            return node.fn("sub", [a, b]);
+          case "+":
+            return node.fn("add", [a, b]);
+          case "&&":
+            return node.fn("every", [a, b]);
+          case "||":
+            return node.fn("some", [a, b]);
+          case "*":
+            return node.fn("mul", [a, b]);
+          case "/":
+            return node.fn("div", [a, b]);
+          case "==":
+            return node.fn("eq", [a, b]);
+          case "!=":
+            return node.fn("not", [node.fn("eq", [a, b])]);
+          case ">":
+            return node.fn("gt", [a, b]);
+          case ">=":
+            return node.fn("gte", [a, b]);
+          case "<":
+            return node.fn("lt", [a, b]);
+          case "<=":
+            return node.fn("lte", [a, b]);
+        }
+      }
+    }
+  }
+
+  return step(main);
 };

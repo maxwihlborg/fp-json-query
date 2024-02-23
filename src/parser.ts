@@ -20,6 +20,10 @@ export interface Parser<T> {
   (offset: number, tokens: Tokens): ParserResult<T>;
 }
 
+export const NUM_RE = /\d+(:?\.\d+)?(:?e\d+)?/;
+export const STR_LIT_RE = /"([^"\\]|\\[\s\S])*"/;
+export const STR_RE = /\w+/;
+
 export const error: ParserResult<never> = { tag: "ParseError" };
 export const ok = <T>(offset: number, value: T): ParserResult<T> => ({
   tag: "ParseOk",
@@ -103,7 +107,7 @@ export const joinRes: {
 export const str: {
   (): Parser<string>;
 } = (() => {
-  const re = wrapRe(/\w+/);
+  const re = wrapRe(STR_RE);
   return () => (i, t) => {
     if (re.test(t[i])) {
       return ok(i + 1, t[i]);
@@ -112,7 +116,17 @@ export const str: {
   };
 })();
 
-export const NUM_RE = /\d+(:?\.\d+)?(:?e\d+)?/;
+export const strLit: {
+  (): Parser<string>;
+} = (() => {
+  const re = wrapRe(STR_LIT_RE);
+  return () => (i, t) => {
+    if (re.test(t[i])) {
+      return ok(i + 1, t[i]);
+    }
+    return error;
+  };
+})();
 
 export const num: {
   (): Parser<number>;
