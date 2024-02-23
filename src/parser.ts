@@ -44,6 +44,10 @@ export const make: {
   return res.value;
 };
 
+export const lazy: {
+  <A>(fn: () => Parser<A>): Parser<A>;
+} = (fn) => (i, t) => fn()(i, t);
+
 export const tuple: {
   <A extends readonly Parser<any>[]>(
     ps: [...A],
@@ -88,27 +92,43 @@ export const oneOf: {
   return error;
 };
 
+export const wrapRe: {
+  (re: RegExp): RegExp;
+} = (re) => new RegExp(`^${re.source}$`, re.flags);
+
+export const joinRes: {
+  (res: RegExp[], flags?: string): RegExp;
+} = (res, flags) => new RegExp(res.map((re) => re.source).join("|"), flags);
+
 export const str: {
   (): Parser<string>;
-} = () => (i, t) => {
-  if (/^\w+$/.test(t[i])) {
-    return ok(i + 1, t[i]);
-  }
-  return error;
-};
+} = (() => {
+  const re = wrapRe(/\w+/);
+  return () => (i, t) => {
+    if (re.test(t[i])) {
+      return ok(i + 1, t[i]);
+    }
+    return error;
+  };
+})();
+
+export const NUM_RE = /\d+(:?\.\d+)?(:?e\d+)?/;
 
 export const num: {
   (): Parser<number>;
-} = () => (i, t) => {
-  if (/^-?\d+(\.\d+)?$/.test(t[i])) {
-    return ok(i + 1, parseFloat(t[i]));
-  }
-  return error;
-};
+} = (() => {
+  const re = wrapRe(NUM_RE);
+  return () => (i, t) => {
+    if (re.test(t[i])) {
+      return ok(i + 1, parseFloat(t[i]));
+    }
+    return error;
+  };
+})();
 
-export const many: {
-  <A>(parse: Parser<A>): Parser<A[]>;
-} = (parse) => (i, t) => {
+const _many: {
+  (min: number): <A>(parse: Parser<A>) => Parser<A[]>;
+} = (min) => (parse) => (i, t) => {
   let n = i;
   const res: any[] = [];
 
@@ -119,16 +139,19 @@ export const many: {
     res.push(r.value);
   } while (n < t.length);
 
+  if (res.length < min) {
+    return error;
+  }
+
   return ok(n, res);
 };
 
-export const lazy: {
-  <A>(fn: () => Parser<A>): Parser<A>;
-} = (fn) => (i, t) => fn()(i, t);
+export const many = _many(0);
+export const many1 = _many(1);
 
-export const sep: {
-  <A>(sep: Parser<any>, parse: Parser<A>): Parser<A[]>;
-} = (sep, parse) => (i, t) => {
+const _sep: {
+  (min: number): <A>(sep: Parser<any>, parse: Parser<A>) => Parser<A[]>;
+} = (min) => (sep, parse) => (i, t) => {
   let n = i;
   const res: any[] = [];
 
@@ -142,8 +165,15 @@ export const sep: {
     n = s.offset;
   } while (n < t.length);
 
+  if (res.length < min) {
+    return error;
+  }
+
   return ok(n, res);
 };
+
+export const sep = _sep(0);
+export const sep1 = _sep(1);
 
 const _enum: {
   <A extends readonly string[]>(as: [...A]): Parser<A[number]>;
