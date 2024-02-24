@@ -1,4 +1,6 @@
+import { pipe } from "remeda";
 import * as p from "./parser";
+import assert from "node:assert";
 
 export namespace Ast {
   export type Num = {
@@ -29,6 +31,7 @@ export namespace Ast {
   };
 
   export type Expr = Num | ID | BinaryOp | FuncCall;
+  export type IR = Num | ID | (FuncCall & { args: IR[] });
 }
 
 enum AstType {
@@ -82,7 +85,10 @@ const node = {
     t: AstType.Num,
     val,
   }),
-  fn: (name: string, args: Ast.Expr[]): Ast.FuncCall => ({
+  fn: <A extends Ast.Expr>(
+    name: string,
+    args: A[],
+  ): Ast.FuncCall & { args: A[] } => ({
     t: AstType.FuncCall,
     name,
     args,
@@ -198,7 +204,7 @@ const parseQuery: p.Parser<Ast.FuncCall> = p.lazy(() => parseFuncCall);
 
 export const parse = p.make(LEXER_RE, parseQuery);
 
-export const show = (e: Ast.Expr) => {
+export function show(e: Ast.Expr) {
   function* step(p: string, e: Ast.Expr): IterableIterator<string> {
     switch (e.t) {
       case AstType.Num:
@@ -223,10 +229,10 @@ export const show = (e: Ast.Expr) => {
     }
   }
   return Array.from(step("", e)).join("\n");
-};
+}
 
-export const compile = (main: Ast.FuncCall): Ast.Expr => {
-  function step(e: Ast.Expr): Ast.Expr {
+export function reduce(main: Ast.FuncCall): Ast.IR {
+  function step(e: Ast.Expr): Ast.IR {
     switch (e.t) {
       case AstType.Num:
       case AstType.ID:
@@ -296,4 +302,245 @@ export const compile = (main: Ast.FuncCall): Ast.Expr => {
   }
 
   return step(main);
-};
+}
+
+export function build(ir: Ast.IR) {
+  interface Fn {
+    (x: any): any;
+  }
+
+  interface Iter {
+    (it: IterableIterator<any>): IterableIterator<any>;
+  }
+
+  enum CType {
+    Gen,
+    Op,
+  }
+
+  interface Gen<A extends any[]> {
+    t: CType.Gen;
+    fn(...as: [...A]): Iter;
+  }
+  interface Op<A extends any[]> {
+    t: CType.Op;
+    fn(...as: [...A]): Fn;
+  }
+
+  const gen = {
+    map: {
+      t: CType.Gen,
+      fn: (fn) =>
+        function* (it) {
+          for (const x of it) {
+            yield fn(x);
+          }
+        },
+    },
+    filter: {
+      t: CType.Gen,
+      fn: (fn) =>
+        function* (it) {
+          for (const x of it) {
+            if (fn(x)) {
+              yield x;
+            }
+          }
+        },
+    },
+    skip: {
+      t: CType.Gen,
+      fn: (fn) =>
+        function* (it) {
+          let i = 0;
+          for (const x of it) {
+            if (i++ < fn(x)) continue;
+            yield x;
+          }
+        },
+    },
+    take: {
+      t: CType.Gen,
+      fn: (fn) =>
+        function* (it) {
+          let i = 0;
+          for (const x of it) {
+            if (fn(x) <= i++) break;
+            yield x;
+          }
+        },
+    },
+    chain: {
+      t: CType.Gen,
+      fn: (fn) =>
+        function* (it) {
+          for (const x of it) {
+            yield* fn(x);
+          }
+        },
+    },
+  } satisfies Record<string, Gen<[Fn]>>;
+
+  const ops = {
+    get: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.reduce((c, a) => c?.[a(x)], x),
+    },
+    pick: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.reduce<Record<string, any>>((a, b) => {
+            const k = b(x);
+            a[k] = x[k];
+            return a;
+          }, {}),
+    },
+    project: {
+      t: CType.Op,
+      fn: (k, v) => (x) => ({ [k(x)]: v(x) }),
+    },
+    union: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.reduce((c, a) => Object.assign(c, a(x)), {}),
+    },
+    identity: {
+      t: CType.Op,
+      fn: (): Fn => (x) => x,
+    },
+    add: {
+      t: CType.Op,
+      fn:
+        (h, ...tail) =>
+        (x) =>
+          tail.reduce((a, b) => a + b(x), h(x)),
+    },
+    subract: {
+      t: CType.Op,
+      fn:
+        (h, ...tail) =>
+        (x) =>
+          tail.reduce((a, b) => a - b(x), h(x)),
+    },
+    multiply: {
+      t: CType.Op,
+      fn:
+        (h, ...tail) =>
+        (x) =>
+          tail.reduce((a, b) => a * b(x), h(x)),
+    },
+    divide: {
+      t: CType.Op,
+      fn:
+        (h, ...tail) =>
+        (x) =>
+          tail.reduce((a, b) => a / b(x), h(x)),
+    },
+    gt: {
+      t: CType.Op,
+      fn: (a, b) => (x) => a(x) > b(x),
+    },
+    gte: {
+      t: CType.Op,
+      fn: (a, b) => (x) => a(x) >= b(x),
+    },
+    lt: {
+      t: CType.Op,
+      fn: (a, b) => (x) => a(x) < b(x),
+    },
+    lte: {
+      t: CType.Op,
+      fn: (a, b) => (x) => a(x) <= b(x),
+    },
+    eq: {
+      t: CType.Op,
+      fn: (a, b) => (x) => a(x) === b(x),
+    },
+    includes: {
+      t: CType.Op,
+      fn: (a) => (x) => {
+        if (Array.isArray(x) || typeof x === "string") {
+          return x.includes(a(x));
+        }
+        return false;
+      },
+    },
+    not: {
+      t: CType.Op,
+      fn: (a) => (x) => !a(x),
+    },
+    flow: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.reduce((a, b) => b(a), x),
+    },
+    every: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.every((a) => a(x)),
+    },
+    some: {
+      t: CType.Op,
+      fn:
+        (...as) =>
+        (x) =>
+          as.some((a) => a(x)),
+    },
+  } satisfies Record<string, Op<Fn[]>>;
+
+  const instructionSet = {
+    p: ops.project,
+    u: ops.union,
+    pluck: ops.get,
+    mul: ops.multiply,
+    sub: ops.subract,
+    div: ops.divide,
+    has: ops.includes,
+    id: ops.identity,
+    flatMap: gen.chain,
+    ...gen,
+    ...ops,
+  };
+
+  const fns = new Proxy<Record<string, (...as: any) => Fn>>(
+    {},
+    {
+      get(_, name) {
+        if (typeof name === "string" && name in instructionSet) {
+          return instructionSet[name as keyof typeof instructionSet].fn;
+        }
+        return () => {
+          console.error(`No such function: ${name as string}`);
+          return function* () {};
+        };
+      },
+    },
+  );
+
+  function step(e: Ast.IR): Fn {
+    switch (e.t) {
+      case AstType.ID:
+      case AstType.Num:
+        return () => e.val;
+      case AstType.FuncCall:
+        return fns[e.name](...e.args.map(step));
+    }
+  }
+
+  return step(ir);
+}
+
+export function compile(q: string) {
+  return pipe(q, parse, reduce, build);
+}

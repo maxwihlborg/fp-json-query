@@ -9,11 +9,33 @@ cli
   .example(`${name} "map(pick(foo, bar)) | filter(.foo > 2)" test.json`)
   .action(async (q: string, _file: string | undefined) => {
     try {
-      const prog = query.parse(q);
+      /* const ast = query.parse(q);
+      const ir = query.reduce(ast);
+      const pipe = query.build(ir);
 
-      console.log(query.show(prog));
-      console.log(query.show(query.compile(prog)));
+      console.log(query.show(ast));
+      console.log(query.show(ir));
+      console.log(pipe.toString()); */
+
+      const program = query.compile(q);
+
+      console.log(
+        Array.from(
+          program(
+            Array.from({ length: 20 }, (_, id) => ({
+              id,
+              name: `Test ${id}`,
+              age: 4,
+              profile: {
+                friends: [1, 2, 3],
+                email: `user-${id}@${["gmail", "hotmail"][id % 2]}.com`,
+              },
+            })),
+          ),
+        ),
+      );
     } catch (e) {
+      console.log(e);
       if (e instanceof Error) {
         console.log(e.message);
       }

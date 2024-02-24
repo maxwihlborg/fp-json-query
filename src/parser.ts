@@ -122,7 +122,7 @@ export const strLit: {
   const re = wrapRe(STR_LIT_RE);
   return () => (i, t) => {
     if (re.test(t[i])) {
-      return ok(i + 1, t[i]);
+      return ok(i + 1, JSON.parse(t[i]));
     }
     return error;
   };
