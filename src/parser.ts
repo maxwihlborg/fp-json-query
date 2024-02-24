@@ -1,4 +1,3 @@
-import { purry } from "remeda";
 import assert from "node:assert";
 
 interface ParseError {
@@ -209,16 +208,9 @@ export const regex: {
   return error;
 };
 
-const _map =
+export const map =
   <A, B>(parse: Parser<A>, fn: (a: A) => B): Parser<B> =>
   (i, t) => {
     const r = parse(i, t);
     return isError(r) ? r : ok(r.offset, fn(r.value));
   };
-
-export const map: {
-  <A, B>(fn: (a: A) => B): (parse: Parser<A>) => Parser<B>;
-  <A, B>(parse: Parser<A>, fn: (a: A) => B): Parser<B>;
-} = function () {
-  return purry(_map, arguments);
-};
