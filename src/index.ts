@@ -1,27 +1,14 @@
-import { cac } from "cac";
 import fs from "node:fs";
+
+import type { Readable, Writable } from "node:stream";
+
+import { cac } from "cac";
+
 import * as ins from "./instructions";
 import * as query from "./query";
-import type { Writable, Readable } from "node:stream";
 
 const name = "fq";
 const cli = cac(name);
-
-cli.command("list", "List all available ops").action(() => {
-  const arr = Object.entries(ins)
-    .map(([name, i]) => ({
-      name,
-      alias: i.meta.alias,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-
-  const max = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
-
-  console.log(`  ${"Name".padEnd(max)} Alias\n`);
-  for (const { name, alias } of arr) {
-    console.log(`  ${name.padEnd(max)} ${alias.join(", ")}`);
-  }
-});
 
 function isIterator(arg: unknown): arg is IterableIterator<any> {
   return Boolean(
@@ -84,7 +71,23 @@ cli
     },
   );
 
+cli.command("list", "List all available ops").action(() => {
+  const arr = Object.entries(ins)
+    .map(([name, i]) => ({
+      name,
+      alias: i.meta.alias,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const max = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
+
+  console.log(`  ${"Name".padEnd(max)} Alias\n`);
+  for (const { name, alias } of arr) {
+    console.log(`  ${name.padEnd(max)} ${alias.join(", ")}`);
+  }
+});
+
 cli.help();
-cli.version("0.0.1");
+cli.version("0.1.0");
 
 cli.parse();

@@ -1,7 +1,9 @@
+import assert from "node:assert";
+
 import type { Instruction } from "./instructions";
+
 import * as ins from "./instructions";
 import * as p from "./parser";
-import assert from "assert";
 
 export namespace Ast {
   export type Num = {
