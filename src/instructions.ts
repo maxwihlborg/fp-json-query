@@ -133,18 +133,6 @@ export const range = genOp(
     },
 );
 
-export const count = genOp(
-  () =>
-    function* (it) {
-      let i = 0;
-      for (const _ of it) {
-        i += 1;
-      }
-      yield i;
-    },
-  { alias: ["len"] },
-);
-
 export const flatMap = genOp(
   (fn) =>
     function* (it) {
@@ -153,6 +141,17 @@ export const flatMap = genOp(
       }
     },
   { alias: ["chain"] },
+);
+
+export const count = fnOp(
+  () => (it) => {
+    let i = 0;
+    for (const _ of it) {
+      i += 1;
+    }
+    return i;
+  },
+  { alias: ["len"] },
 );
 
 export const constant = fnOp((ex) => (x) => ex(x), { alias: ["c"] });
@@ -173,6 +172,20 @@ export const pick = fnOp(
         return a;
       }, {}),
 );
+
+export const omit = fnOp((...as) => (x) => {
+  const toOmit = as.reduce<Set<string>>((a, b) => {
+    a.add(b(x));
+    return a;
+  }, new Set());
+  return Object.keys(x).reduce<Record<string, any>>((a, k) => {
+    if (toOmit.has(k)) {
+      return a;
+    }
+    a[k] = x[k];
+    return a;
+  }, {});
+});
 
 export const project = fnOp((k, v) => (x) => ({ [k(x)]: v(x) }), {
   alias: ["p"],
@@ -225,9 +238,7 @@ export const greaterThanEquals = fnOp(
   (a, b) => (x) => {
     return a(x) >= b(x);
   },
-  {
-    alias: ["gte"],
-  },
+  { alias: ["gte"] },
 );
 
 export const lessThan = fnOp(
