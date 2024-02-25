@@ -1,40 +1,47 @@
 import assert from "node:assert";
 
-interface ParseError {
-  readonly tag: "ParseError";
+export namespace Parser {
+  export type Error = {
+    t: ParserType.Error;
+  };
+
+  export type Ok<T> = {
+    t: ParserType.Ok;
+    offset: number;
+    value: T;
+  };
+
+  export type Tokens = readonly string[];
+
+  export type Result<T> = Error | Ok<T>;
+  export type InferResult<T> = [T] extends [Parser<infer R>] ? R : never;
 }
 
-interface ParseOk<T> {
-  readonly tag: "ParseOk";
-  offset: number;
-  value: T;
+enum ParserType {
+  Ok,
+  Error,
 }
-
-type Tokens = readonly string[];
-
-type ParserResult<T> = ParseError | ParseOk<T>;
-export type InferParserResult<T> = [T] extends [Parser<infer R>] ? R : never;
 
 export interface Parser<T> {
-  (offset: number, tokens: Tokens): ParserResult<T>;
+  (offset: number, tokens: Parser.Tokens): Parser.Result<T>;
 }
 
 export const NUM_RE = /\d+(:?\.\d+)?(:?e\d+)?/;
 export const STR_LIT_RE = /"([^"\\]|\\[\s\S])*"/;
 export const STR_RE = /\w+/;
 
-export const error: ParserResult<never> = { tag: "ParseError" };
-export const ok = <T>(offset: number, value: T): ParserResult<T> => ({
-  tag: "ParseOk",
+export const error: Parser.Result<never> = { t: ParserType.Error };
+export const ok = <T>(offset: number, value: T): Parser.Result<T> => ({
+  t: ParserType.Ok,
   offset,
   value,
 });
 
-export const isOk = <T>(o: ParserResult<T>): o is ParseOk<T> =>
-  o.tag === "ParseOk";
+export const isOk = <T>(o: Parser.Result<T>): o is Parser.Ok<T> =>
+  o.t === ParserType.Ok;
 
-export const isError = <T>(o: ParserResult<T>): o is ParseError =>
-  o.tag === "ParseError";
+export const isError = <T>(o: Parser.Result<T>): o is Parser.Error =>
+  o.t === ParserType.Error;
 
 export const make: {
   <P>(lex: RegExp, parse: Parser<P>): (str: string) => P;
@@ -55,11 +62,11 @@ export const tuple: {
   <A extends readonly Parser<any>[]>(
     ps: [...A],
   ): Parser<{
-    [P in keyof A]: InferParserResult<A[P]>;
+    [P in keyof A]: Parser.InferResult<A[P]>;
   }>;
 } = (ps) => (i, t) => {
   let n = i,
-    r: ParserResult<any> = error,
+    r: Parser.Result<any> = error,
     res: any[] = [];
 
   for (let i = 0; i < ps.length; i++) {
@@ -84,7 +91,7 @@ export const lit: {
 export const oneOf: {
   <T extends readonly Parser<any>[]>(
     ps: [...T],
-  ): Parser<InferParserResult<T[number]>>;
+  ): Parser<Parser.InferResult<T[number]>>;
 } = (ps) => (i, t) => {
   for (let j = 0; j < ps.length; j++) {
     const r = ps[j](i, t);

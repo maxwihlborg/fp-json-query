@@ -7,28 +7,28 @@ import * as p from "./parser";
 
 export namespace Ast {
   export type Num = {
-    t: AstType.Num;
+    t: NodeType.Num;
     val: number;
   };
 
   export type ID = {
-    t: AstType.ID;
+    t: NodeType.ID;
     val: string;
   };
 
   export type BinaryOp = {
-    t: AstType.BinaryOp;
+    t: NodeType.BinaryOp;
     lhs: Expr;
     op:
-      | p.InferParserResult<typeof token.Z_ADD_OPS>
-      | p.InferParserResult<typeof token.Z_MUL_OPS>
-      | p.InferParserResult<typeof token.Z_CMP_OPS>
-      | p.InferParserResult<typeof token.Z_LOG_OPS>;
+      | p.Parser.InferResult<typeof token.Z_ADD_OPS>
+      | p.Parser.InferResult<typeof token.Z_MUL_OPS>
+      | p.Parser.InferResult<typeof token.Z_CMP_OPS>
+      | p.Parser.InferResult<typeof token.Z_LOG_OPS>;
     rhs: Expr;
   };
 
   export type FuncCall = {
-    t: AstType.FuncCall;
+    t: NodeType.FuncCall;
     name: string;
     args: Expr[];
   };
@@ -37,7 +37,7 @@ export namespace Ast {
   export type IR = Num | ID | (FuncCall & { args: IR[] });
 }
 
-enum AstType {
+enum NodeType {
   Num,
   ID,
   BinaryOp,
@@ -81,18 +81,18 @@ const token = {
 
 const node = {
   id: (val: string): Ast.ID => ({
-    t: AstType.ID,
+    t: NodeType.ID,
     val,
   }),
   num: (val: number): Ast.Num => ({
-    t: AstType.Num,
+    t: NodeType.Num,
     val,
   }),
   fn: <A extends Ast.Expr>(
     name: string,
     args: A[],
   ): Ast.FuncCall & { args: A[] } => ({
-    t: AstType.FuncCall,
+    t: NodeType.FuncCall,
     name,
     args,
   }),
@@ -101,7 +101,7 @@ const node = {
     op: Ast.BinaryOp["op"],
     rhs: Ast.Expr,
   ): Ast.BinaryOp => ({
-    t: AstType.BinaryOp,
+    t: NodeType.BinaryOp,
     lhs,
     op,
     rhs,
@@ -210,19 +210,19 @@ export const parse = p.make(LEXER_RE, parseQuery);
 export function show(e: Ast.Expr) {
   function* step(p: string, e: Ast.Expr): IterableIterator<string> {
     switch (e.t) {
-      case AstType.Num:
+      case NodeType.Num:
         yield `${p}(nr: ${e.val})`;
         break;
-      case AstType.ID:
+      case NodeType.ID:
         yield `${p}(id: ${e.val})`;
         break;
-      case AstType.BinaryOp:
+      case NodeType.BinaryOp:
         yield `${p}(${e.op}`;
         yield* step(p + "  ", e.lhs);
         yield* step(p + "  ", e.rhs);
         yield `${p})`;
         break;
-      case AstType.FuncCall:
+      case NodeType.FuncCall:
         yield `${p}(fn: ${e.name}`;
         for (const a of e.args) {
           yield* step(p + "  ", a);
@@ -237,16 +237,16 @@ export function show(e: Ast.Expr) {
 export function reduce(main: Ast.FuncCall): Ast.IR {
   function step(e: Ast.Expr): Ast.IR {
     switch (e.t) {
-      case AstType.Num:
-      case AstType.ID:
+      case NodeType.Num:
+      case NodeType.ID:
         return e;
-      case AstType.FuncCall: {
+      case NodeType.FuncCall: {
         return node.fn(e.name, e.args.map(step));
       }
-      case AstType.BinaryOp: {
+      case NodeType.BinaryOp: {
         const a = step(e.lhs);
         const b = step(e.rhs);
-        if (a.t === AstType.Num && b.t === AstType.Num) {
+        if (a.t === NodeType.Num && b.t === NodeType.Num) {
           switch (e.op) {
             case "-":
               return node.num(a.val - b.val);
@@ -330,10 +330,10 @@ export function build(ir: Ast.IR) {
 
   function step(e: Ast.IR): Instruction.LazyFunc | Instruction.LazyIter {
     switch (e.t) {
-      case AstType.ID:
-      case AstType.Num:
+      case NodeType.ID:
+      case NodeType.Num:
         return () => e.val;
-      case AstType.FuncCall:
+      case NodeType.FuncCall:
         return kernel[e.name].fn(...e.args.map(step));
     }
   }
