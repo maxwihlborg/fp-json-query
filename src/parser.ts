@@ -2,11 +2,11 @@ import assert from "node:assert";
 
 export namespace Parser {
   export type Error = {
-    t: ParserType.Error;
+    t: ParserResult.Error;
   };
 
   export type Ok<T> = {
-    t: ParserType.Ok;
+    t: ParserResult.Ok;
     offset: number;
     value: T;
   };
@@ -17,7 +17,7 @@ export namespace Parser {
   export type InferResult<T> = [T] extends [Parser<infer R>] ? R : never;
 }
 
-enum ParserType {
+enum ParserResult {
   Ok,
   Error,
 }
@@ -30,18 +30,18 @@ export const NUM_RE = /\d+(:?\.\d+)?(:?e\d+)?/;
 export const STR_LIT_RE = /"([^"\\]|\\[\s\S])*"/;
 export const STR_RE = /\w+/;
 
-export const error: Parser.Result<never> = { t: ParserType.Error };
+export const error: Parser.Result<never> = { t: ParserResult.Error };
 export const ok = <T>(offset: number, value: T): Parser.Result<T> => ({
-  t: ParserType.Ok,
+  t: ParserResult.Ok,
   offset,
   value,
 });
 
 export const isOk = <T>(o: Parser.Result<T>): o is Parser.Ok<T> =>
-  o.t === ParserType.Ok;
+  o.t === ParserResult.Ok;
 
 export const isError = <T>(o: Parser.Result<T>): o is Parser.Error =>
-  o.t === ParserType.Error;
+  o.t === ParserResult.Error;
 
 export const make: {
   <P>(lex: RegExp, parse: Parser<P>): (str: string) => P;

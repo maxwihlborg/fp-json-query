@@ -1,5 +1,5 @@
-export namespace Instruction {
-  export type Any = Generator<LazyFunc[]> | Operation<LazyFunc[]>;
+export namespace Operator {
+  export type Any = Generator<LazyFunc[]> | Operator<LazyFunc[]>;
 
   export interface LazyFunc {
     (...as: any[]): any;
@@ -10,13 +10,13 @@ export namespace Instruction {
   }
 
   export type Generator<A extends any[]> = {
-    t: InstructionType.Generator;
+    t: OperatorType.Generator;
     fn(...as: [...A]): LazyIter;
     meta: Meta;
   };
 
-  export type Operation<A extends any[]> = {
-    t: InstructionType.Operation;
+  export type Operator<A extends any[]> = {
+    t: OperatorType.Function;
     fn(...as: [...A]): LazyFunc;
     meta: Meta;
   };
@@ -26,18 +26,18 @@ export namespace Instruction {
   }
 }
 
-enum InstructionType {
+enum OperatorType {
   Generator,
-  Operation,
+  Function,
 }
 
 const genOp: {
-  <T extends Instruction.LazyFunc[]>(
-    fn: (...as: [...T]) => Instruction.LazyIter,
-    meta?: Partial<Instruction.Meta>,
-  ): Instruction.Generator<T>;
+  <T extends Operator.LazyFunc[]>(
+    fn: (...as: [...T]) => Operator.LazyIter,
+    meta?: Partial<Operator.Meta>,
+  ): Operator.Generator<T>;
 } = (fn, meta) => ({
-  t: InstructionType.Generator,
+  t: OperatorType.Generator,
   fn,
   meta: {
     alias: meta?.alias ?? [],
@@ -45,12 +45,12 @@ const genOp: {
 });
 
 const fnOp: {
-  <T extends Instruction.LazyFunc[]>(
-    fn: (...as: [...T]) => Instruction.LazyFunc,
-    meta?: Partial<Instruction.Meta>,
-  ): Instruction.Operation<T>;
+  <T extends Operator.LazyFunc[]>(
+    fn: (...as: [...T]) => Operator.LazyFunc,
+    meta?: Partial<Operator.Meta>,
+  ): Operator.Operator<T>;
 } = (fn, meta) => ({
-  t: InstructionType.Operation,
+  t: OperatorType.Function,
   fn,
   meta: {
     alias: meta?.alias ?? [],
@@ -89,6 +89,43 @@ export const unique = genOp(
       }
     },
   { alias: ["uniq"] },
+);
+
+export const reverse = genOp(
+  () =>
+    function* (it) {
+      const arr = Array.from(it);
+      for (let i = arr.length - 1; i >= 0; i--) {
+        yield arr[i];
+      }
+    },
+);
+
+export const sort = genOp(
+  (fn) =>
+    function* (it) {
+      yield* Array.from(it).sort((a, b) => {
+        const x = fn(a);
+        const y = fn(b);
+        if (x < y) {
+          return -1;
+        } else if (x > y) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+    },
+);
+
+export const entries = genOp(
+  (fn) =>
+    function* (x) {
+      yield* Object.entries(fn(x)).map(([key, value]) => ({
+        key,
+        value,
+      }));
+    },
 );
 
 export const skip = genOp(

@@ -4,13 +4,13 @@ import type { Readable, Writable } from "node:stream";
 
 import { cac } from "cac";
 
-import * as ins from "./instructions";
+import * as ops from "./operators";
 import * as query from "./query";
 
 const name = "fq";
 const cli = cac(name);
 
-function isIterator(arg: unknown): arg is IterableIterator<any> {
+function isIteratorLike(arg: unknown): arg is IterableIterator<any> {
   return Boolean(
     arg &&
       typeof (arg as any)[Symbol.iterator] === "function" &&
@@ -19,9 +19,9 @@ function isIterator(arg: unknown): arg is IterableIterator<any> {
 }
 
 cli
-  .command("<query> [file]", "Run functional operations on input file or stdin")
+  .command("<query> [file]", "Run fp style operators on input file or stdin")
   .option("-o, --out <path>", "Write the result to a file")
-  .option("--no-nl", "Don't add a new line at the end")
+  .option("--no-nl", "Control new line at the end output")
   .example(
     `${name} "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json`,
   )
@@ -52,7 +52,7 @@ cli
           ? fs.createWriteStream(options.out)
           : process.stdout;
 
-        if (isIterator(out)) {
+        if (isIteratorLike(out)) {
           outputStream.write(JSON.stringify(Array.from(out), null, 2));
         } else if (typeof out === "object") {
           outputStream.write(JSON.stringify(out, null, 2));
@@ -63,7 +63,6 @@ cli
           outputStream.write("\n");
         }
       } catch (e) {
-        console.log(e);
         if (e instanceof Error) {
           console.log(e.message);
         }
@@ -71,11 +70,11 @@ cli
     },
   );
 
-cli.command("list", "List all available ops").action(() => {
-  const arr = Object.entries(ins)
-    .map(([name, i]) => ({
+cli.command("list", "List available operators").action(() => {
+  const arr = Object.entries(ops)
+    .map(([name, op]) => ({
       name,
-      alias: i.meta.alias,
+      alias: op.meta.alias,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 

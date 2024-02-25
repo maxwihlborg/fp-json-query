@@ -1,8 +1,8 @@
 import assert from "node:assert";
 
-import type { Instruction } from "./instructions";
+import type { Operator } from "./operators";
 
-import * as ins from "./instructions";
+import * as ops from "./operators";
 import * as p from "./parser";
 
 export namespace Ast {
@@ -309,11 +309,11 @@ export function reduce(main: Ast.FuncCall): Ast.IR {
 
 export function build(ir: Ast.IR) {
   const kernel = new Proxy(
-    Object.entries(ins).reduce<Record<string, Instruction.Any>>(
-      (a, [name, ins]) => {
-        a[name] = ins;
-        ins.meta.alias.forEach((alias) => {
-          a[alias] = ins;
+    Object.entries(ops).reduce<Record<string, Operator.Any>>(
+      (a, [name, op]) => {
+        a[name] = op;
+        op.meta.alias.forEach((alias) => {
+          a[alias] = op;
         });
 
         return a;
@@ -322,13 +322,13 @@ export function build(ir: Ast.IR) {
     ),
     {
       get(target, name: string) {
-        assert(name in target, `Invalid instruction: "${name}"`);
+        assert(name in target, `Invalid operator: "${name}"`);
         return target[name];
       },
     },
   );
 
-  function step(e: Ast.IR): Instruction.LazyFunc | Instruction.LazyIter {
+  function step(e: Ast.IR): Operator.LazyFunc | Operator.LazyIter {
     switch (e.t) {
       case NodeType.ID:
       case NodeType.Num:

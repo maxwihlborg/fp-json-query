@@ -9,8 +9,8 @@ Usage:
   $ fq <query> [file]
 
 Commands:
-  <query> [file]  Run functional operations on input file or stdin
-  list            List all available ops
+  <query> [file]  Run fp style operators on input file or stdin
+  list            List available operators
 
 For more info, run any command with the `--help` flag:
   $ fq --help
@@ -18,7 +18,7 @@ For more info, run any command with the `--help` flag:
 
 Options:
   -o, --out <path>  Write the result to a file
-  --no-nl           Don't add a new line at the end (default: true)
+  --no-nl           Control new line at the end output (default: true)
   -h, --help        Display this message
   -v, --version     Display version number
 
@@ -54,8 +54,10 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | pick              |       |
 | project           | p     |
 | range             |       |
+| reverse           |       |
 | skip              |       |
 | some              | or    |
+| sort              |       |
 | subract           | sub   |
 | take              |       |
 | union             | u     |
