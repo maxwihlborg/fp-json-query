@@ -2,13 +2,11 @@
 
 <!-- BEGIN BADGES -->
 
-<div style="display: flex; gap: 0.5rem">
-<img src="https://img.shields.io/badge/version-0.1.1-blue.svg" alt="version">
-<img src="https://img.shields.io/badge/tests-passing-green.svg" alt="tests">
-<a href="https://www.npmjs.com/package/fp-json-cli"><img src="https://img.shields.io/npm/v/fp-json-cli" alt="NPM Version"></a>
-</div>
+![version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+![tests](https://img.shields.io/badge/tests-passing-green.svg)
+[![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
-<!-- END -->
+<!-- END BADGES -->
 
 > Simple cli inspired by [jq](https://jqlang.github.io/jq/) and built to be more familier to JavaScript and Typescript developers.
 
@@ -16,10 +14,31 @@
 
 **Table of Contents**
 
-- [Operators](#operators)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [CLI](#cli)
+  - [Operators](#operators)
 - [TODO](#todo)
 
-<!-- END-->
+<!-- END TOC -->
+
+## Installation
+
+```shell
+npm install --global fp-json-cli
+```
+
+```shell
+yarn global add fp-json-cli
+```
+
+```shell
+pnpm install --global fp-json-cli
+```
+
+## Usage
+
+### CLI
 
 <!-- BEGIN USAGE -->
 
@@ -49,9 +68,9 @@ Examples:
 fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json
 ```
 
-<!-- END -->
+<!-- END USAGE -->
 
-## Operators
+### Operators
 
 <!-- BEGIN OPS -->
 
@@ -91,7 +110,7 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | union             | u     |
 | unique            | uniq  |
 
-<!-- END -->
+<!-- END OPS -->
 
 ## TODO
 

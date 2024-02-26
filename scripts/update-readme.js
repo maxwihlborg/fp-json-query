@@ -20,11 +20,7 @@ const readmePath = path.resolve(__dirname, "../readme.md");
  * @param {string} color
  */
 function qbg(subject, status, color) {
-  subject = subject || "build";
-  status = status || "unknown";
-  color = color || "lightgrey";
-
-  return `<img src="https://img.shields.io/badge/${subject}-${status}-${color}.svg" alt="${subject}">`;
+  return `![${subject}](https://img.shields.io/badge/${subject}-${status}-${color}.svg)`;
 }
 
 /**
@@ -33,17 +29,15 @@ function qbg(subject, status, color) {
  * @returns{(content:string)=>Promise<string>}
  */
 function sub(id, fn) {
+  const re = new RegExp(
+    `<!--\\s*BEGIN\\s+${id}\\s*-->(:?[^]*?)<!--\\s*END\\s+${id}\\s*-->`,
+    "igm",
+  );
   return async (content) => {
-    const s = new RegExp(`<!--\\s*BEGIN\\s+${id}\\s*-->`, "i").exec(content);
-    assert(s);
-    const e = /<!--\s*END\s*-->/i.exec(content.substring(s.index));
-    assert(e);
-
-    return (
-      content.substring(0, s.index + s[0].length + 1) +
-      (await fn(content)) +
-      content.substring(s.index + e.index - 1)
-    );
+    const next = await fn(content);
+    return content.replace(re, () => {
+      return `<!-- BEGIN ${id} -->\n${next}\n<!-- END ${id} -->`;
+    });
   };
 }
 
@@ -79,42 +73,38 @@ await fs
         .then((b) => JSON.parse(b.toString()));
 
       const pid = spawn("pnpm", ["vitest", "run"], {
+        stdio: "inherit",
         shell: true,
       });
       const [status] = await once(pid, "close");
 
       return nls([
-        '<div style="display: flex; gap: 0.5rem">',
         qbg("version", pkg.version, "blue"),
         status > 0
-          ? qbg("tests", "fail", "red")
+          ? qbg("tests", "failing", "red")
           : qbg("tests", "passing", "green"),
-        `<a href="https://www.npmjs.com/package/fp-json-cli"><img src="https://img.shields.io/npm/v/fp-json-cli" alt="NPM Version"></a>`,
-        "</div>",
+        `[![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)`,
       ]);
     }),
   )
   .then(
-    sub("TOC", (cnt) => {
+    sub("TOC", (content) => {
       return nls(
-        ["**Table of Contents**", ""].concat(
-          Array.from(cnt.matchAll(/^(?<lvl>#+)\s*(?<title>[^\n]+)$/gm)).reduce(
-            /**
-             * @param {string[]} acc
-             */
-            (acc, m) => {
-              const { lvl, title } = m.groups ?? {};
-              if (!(lvl && title && lvl.length > 1)) {
-                return acc;
-              }
-              acc.push(
-                `${" ".repeat((lvl.length - 2) * 2)}- [${title.trim()}](#${title.trim().toLowerCase().replace(/\s+/g, "-")})`,
-              );
-
+        Array.from(
+          content.matchAll(/^(?<lvl>#+)\s*(?<title>[^\n]+)$/gm),
+        ).reduce(
+          (acc, m) => {
+            const { lvl, title } = m.groups ?? {};
+            if (!(lvl && title && lvl.length > 1)) {
               return acc;
-            },
-            [],
-          ),
+            }
+            acc.push(
+              `${"  ".repeat(lvl.length - 2)}- [${title.trim()}](#${title.trim().toLowerCase().replace(/\s+/g, "-")})`,
+            );
+
+            return acc;
+          },
+          ["**Table of Contents**", ""],
         ),
       );
     }),
@@ -132,17 +122,18 @@ await fs
       const a = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
       const b = arr.reduce((a, b) => Math.max(a, b.alias.join(", ").length), 0);
 
-      const lines = [
-        `| ${"Name".padEnd(a)} | ${"Alias".padEnd(b)} |`,
-        `| ${":".padEnd(a, "-")} | ${":".padEnd(b, "-")} |`,
-      ].concat(
-        arr.map(
-          ({ name, alias }) =>
-            `| ${name.padEnd(a)} | ${alias.join(", ").padEnd(b)} |`,
+      return nls(
+        arr.reduce(
+          (acc, { name, alias }) => {
+            acc.push(`| ${name.padEnd(a)} | ${alias.join(", ").padEnd(b)} |`);
+            return acc;
+          },
+          [
+            `| ${"Name".padEnd(a)} | ${"Alias".padEnd(b)} |`,
+            `| ${":".padEnd(a, "-")} | ${":".padEnd(b, "-")} |`,
+          ],
         ),
       );
-
-      return nls(lines);
     }),
   )
   .then((content) => fs.writeFile(readmePath, content));
