@@ -1,7 +1,7 @@
 {
   "name": "fp-json-cli",
   "description": "Simple cli inspired by jq",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "repository": "github:maxwihlborg/fp-json-query",
   "keywords": [
@@ -34,4 +34,3 @@
     "vitest": "^1.3.1"
   }
 }
-
