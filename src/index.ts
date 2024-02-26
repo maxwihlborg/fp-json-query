@@ -10,7 +10,7 @@ import * as query from "./query";
 const name = "fq";
 const cli = cac(name);
 
-function isIteratorLike(arg: unknown): arg is IterableIterator<any> {
+function isIterableIteratorLike(arg: unknown): arg is IterableIterator<any> {
   return Boolean(
     arg &&
       typeof (arg as any)[Symbol.iterator] === "function" &&
@@ -22,6 +22,8 @@ cli
   .command("<query> [file]", "Run fp style operators on input file or stdin")
   .option("-o, --out <path>", "Write the result to a file")
   .option("--no-nl", "Control new line at the end output")
+  .option("--show-ast", "Dump AST to stdout")
+  .option("--show-ir", "Dump intermediate representation to stdout")
   .example(
     `${name} "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json`,
   )
@@ -31,10 +33,25 @@ cli
       file: string | undefined,
       options: {
         out?: string;
-        nl?: boolean;
+        nl: boolean;
+        showAst?: boolean;
+        showIr?: boolean;
       },
     ) => {
       try {
+        if (options.showAst) {
+          for (const line of query.show(query.parse(q))) {
+            process.stdout.write(line + "\n");
+          }
+          return;
+        }
+        if (options.showIr) {
+          for (const line of query.show(query.reduce(query.parse(q)))) {
+            process.stdout.write(line + "\n");
+          }
+          return;
+        }
+
         const program = query.compile(q);
 
         const inputStream: Readable = file
@@ -52,7 +69,7 @@ cli
           ? fs.createWriteStream(options.out)
           : process.stdout;
 
-        if (isIteratorLike(out)) {
+        if (isIterableIteratorLike(out)) {
           outputStream.write(JSON.stringify(Array.from(out), null, 2));
         } else if (typeof out === "object") {
           outputStream.write(JSON.stringify(out, null, 2));

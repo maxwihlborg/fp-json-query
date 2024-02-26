@@ -26,7 +26,7 @@ Examples:
 fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json
 ```
 
-## Operations
+## Operators
 
 | Name              | Alias |
 | :---------------- | :---- |
@@ -67,6 +67,6 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 
 - [ ] Error reporting
 - [ ] Type checking
-- [ ] Reduce/fold operation
+- [ ] Reduce/fold operator
 - [ ] Streaming parsing and serializing for large files
 - [ ] Highlight output similar to `jq`

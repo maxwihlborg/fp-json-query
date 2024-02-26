@@ -207,7 +207,7 @@ const parseQuery: p.Parser<Ast.FuncCall> = p.lazy(() => parseFuncCall);
 
 export const parse = p.make(LEXER_RE, parseQuery);
 
-export function show(e: Ast.Expr) {
+export function show(e: Ast.Expr): IterableIterator<string> {
   function* step(p: string, e: Ast.Expr): IterableIterator<string> {
     switch (e.t) {
       case NodeType.Num:
@@ -231,7 +231,7 @@ export function show(e: Ast.Expr) {
         break;
     }
   }
-  return Array.from(step("", e)).join("\n");
+  return step("", e);
 }
 
 export function reduce(main: Ast.FuncCall): Ast.IR {
@@ -280,9 +280,9 @@ export function reduce(main: Ast.FuncCall): Ast.IR {
           case "+":
             return node.fn("add", [a, b]);
           case "&&":
-            return node.fn("every", [a, b]);
+            return node.fn("and", [a, b]);
           case "||":
-            return node.fn("some", [a, b]);
+            return node.fn("or", [a, b]);
           case "*":
             return node.fn("mul", [a, b]);
           case "/":
