@@ -38,51 +38,45 @@ cli
         showIr?: boolean;
       },
     ) => {
-      try {
-        if (options.showAst) {
-          for (const line of query.show(query.parse(q))) {
-            process.stdout.write(line + "\n");
-          }
-          return;
+      if (options.showAst) {
+        for (const line of query.show(query.parse(q))) {
+          process.stdout.write(line + "\n");
         }
-        if (options.showIr) {
-          for (const line of query.show(query.reduce(query.parse(q)))) {
-            process.stdout.write(line + "\n");
-          }
-          return;
+        return;
+      }
+      if (options.showIr) {
+        for (const line of query.show(query.reduce(query.parse(q)))) {
+          process.stdout.write(line + "\n");
         }
+        return;
+      }
 
-        const program = query.compile(q);
+      const program = query.compile(q);
 
-        const inputStream: Readable = file
-          ? fs.createReadStream(file)
-          : process.stdin;
+      const inputStream: Readable = file
+        ? fs.createReadStream(file)
+        : process.stdin;
 
-        let buffer = Buffer.from("", "utf8");
-        for await (const chunk of inputStream) {
-          buffer = Buffer.concat([buffer, chunk]);
-        }
+      let buffer = Buffer.from("", "utf8");
+      for await (const chunk of inputStream) {
+        buffer = Buffer.concat([buffer, chunk]);
+      }
 
-        const out = program(JSON.parse(buffer.toString()));
+      const out = program(JSON.parse(buffer.toString()));
 
-        const outputStream: Writable = options.out
-          ? fs.createWriteStream(options.out)
-          : process.stdout;
+      const outputStream: Writable = options.out
+        ? fs.createWriteStream(options.out)
+        : process.stdout;
 
-        if (isIterableIteratorLike(out)) {
-          outputStream.write(JSON.stringify(Array.from(out), null, 2));
-        } else if (typeof out === "object") {
-          outputStream.write(JSON.stringify(out, null, 2));
-        } else {
-          outputStream.write(String(out));
-        }
-        if (options["nl"]) {
-          outputStream.write("\n");
-        }
-      } catch (e) {
-        if (e instanceof Error) {
-          console.log(e.message);
-        }
+      if (isIterableIteratorLike(out)) {
+        outputStream.write(JSON.stringify(Array.from(out), null, 2));
+      } else if (typeof out === "object") {
+        outputStream.write(JSON.stringify(out, null, 2));
+      } else {
+        outputStream.write(String(out));
+      }
+      if (options["nl"]) {
+        outputStream.write("\n");
       }
     },
   );
@@ -114,4 +108,12 @@ cli
 cli.help();
 cli.version("0.1.0");
 
-cli.parse();
+try {
+  cli.parse(process.argv, { run: false });
+  await cli.runMatchedCommand();
+} catch (e) {
+  if (e instanceof Error) {
+    console.log(e.message);
+  }
+  process.exit(1);
+}
