@@ -1,6 +1,27 @@
 # FP Json CLI
 
-Simple cli inspired by [jq](https://jqlang.github.io/jq/) and built to be more familier to JavaScript and Typescript developers.
+<!-- BEGIN BADGES -->
+
+<div style="display: flex; gap: 0.5rem">
+<img src="https://img.shields.io/badge/version-0.1.1-blue.svg" alt="version">
+<img src="https://img.shields.io/badge/tests-passing-green.svg" alt="tests">
+<a href="https://www.npmjs.com/package/fp-json-cli"><img src="https://img.shields.io/npm/v/fp-json-cli" alt="NPM Version"></a>
+</div>
+
+<!-- END -->
+
+> Simple cli inspired by [jq](https://jqlang.github.io/jq/) and built to be more familier to JavaScript and Typescript developers.
+
+<!-- BEGIN TOC -->
+
+**Table of Contents**
+
+- [Operators](#operators)
+- [TODO](#todo)
+
+<!-- END-->
+
+<!-- BEGIN USAGE -->
 
 ```
 fq/0.1.0
@@ -17,16 +38,22 @@ For more info, run any command with the `--help` flag:
   $ fq list --help
 
 Options:
-  -o, --out <path>  Write the result to a file
+  -o, --out <path>  Write the result to a file 
   --no-nl           Control new line at the end output (default: true)
-  -h, --help        Display this message
-  -v, --version     Display version number
+  --show-ast        Dump AST to stdout 
+  --show-ir         Dump intermediate representation to stdout 
+  -h, --help        Display this message 
+  -v, --version     Display version number 
 
 Examples:
 fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json
 ```
 
+<!-- END -->
+
 ## Operators
+
+<!-- BEGIN OPS -->
 
 | Name              | Alias |
 | :---------------- | :---- |
@@ -34,6 +61,7 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | constant          | c     |
 | count             | len   |
 | divide            | div   |
+| entries           |       |
 | equals            | eq    |
 | every             | and   |
 | filter            |       |
@@ -62,6 +90,8 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | take              |       |
 | union             | u     |
 | unique            | uniq  |
+
+<!-- END -->
 
 ## TODO
 

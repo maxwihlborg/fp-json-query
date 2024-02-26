@@ -87,21 +87,29 @@ cli
     },
   );
 
-cli.command("list", "List available operators").action(() => {
-  const arr = Object.entries(ops)
-    .map(([name, op]) => ({
-      name,
-      alias: op.meta.alias,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+cli
+  .command("list", "List available operators")
+  .option("--json", "Return operations as JSON")
+  .action((options: { json?: boolean }) => {
+    const arr = Object.entries(ops)
+      .map(([name, op]) => ({
+        name,
+        alias: op.meta.alias,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-  const max = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
+    if (options.json) {
+      process.stdout.write(JSON.stringify(arr));
+      return;
+    }
 
-  console.log(`  ${"Name".padEnd(max)} Alias\n`);
-  for (const { name, alias } of arr) {
-    console.log(`  ${name.padEnd(max)} ${alias.join(", ")}`);
-  }
-});
+    const max = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
+
+    process.stdout.write(`  ${"Name".padEnd(max)} Alias\n\n`);
+    for (const { name, alias } of arr) {
+      process.stdout.write(`  ${name.padEnd(max)} ${alias.join(", ")}\n`);
+    }
+  });
 
 cli.help();
 cli.version("0.1.0");

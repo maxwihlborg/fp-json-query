@@ -12,8 +12,9 @@
     "query"
   ],
   "scripts": {
-    "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts",
+    "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts && ./scripts/update-readme.js",
     "build": "ncc build -o dist ./src/index.ts",
+    "build:readme": "./scripts/update-readme.js",
     "test": "vitest"
   },
   "bin": {
