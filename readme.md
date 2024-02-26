@@ -2,7 +2,7 @@
 
 <!-- BEGIN BADGES -->
 
-![version](https://img.shields.io/badge/version-0.1.1-blue.svg)
+![version](https://img.shields.io/badge/version-0.1.2-blue.svg)
 ![tests](https://img.shields.io/badge/tests-passing-green.svg)
 [![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
