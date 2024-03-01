@@ -1,4 +1,5 @@
 import assert from "node:assert";
+import { ParserGenImpl } from "./internal/parser";
 
 export namespace Parser {
   export type Error = {
@@ -15,6 +16,15 @@ export namespace Parser {
 
   export type Result<T> = Error | Ok<T>;
   export type InferResult<T> = [T] extends [Parser<infer R>] ? R : never;
+
+  export type Gen<A> = {
+    value: Parser<A>;
+    [Symbol.iterator](): Generator<Gen<A>, A>;
+  };
+
+  export interface Adapter {
+    <A>(self: Parser<A>): Parser.Gen<A>;
+  }
 }
 
 enum ParserResult {
@@ -215,9 +225,40 @@ export const regex: {
   return error;
 };
 
+export const peek: {
+  <A>(parse: Parser<A>): Parser<A>;
+} = (parse) => (i, t) => {
+  const res = parse(i, t);
+  return isError(res) ? res : ok(i, res.value);
+};
+
+export const gen: {
+  <P extends Parser.Gen<any>, A>(
+    f: (resume: Parser.Adapter) => Generator<P, A, any>,
+  ): Parser<A>;
+} = (f) =>
+  lazy(() => {
+    const iterator = f((parse) => new ParserGenImpl(parse) as any);
+    const state = iterator.next();
+
+    const step = (state: IteratorResult<any>): Parser<any> =>
+      state.done
+        ? (i) => ok(i, state.value)
+        : flatMap(state.value.value, (val) => step(iterator.next(val)));
+
+    return step(state);
+  });
+
 export const map =
   <A, B>(parse: Parser<A>, fn: (a: A) => B): Parser<B> =>
   (i, t) => {
     const r = parse(i, t);
     return isError(r) ? r : ok(r.offset, fn(r.value));
   };
+
+const flatMap: {
+  <A, B>(parse: Parser<A>, fn: (a: A) => Parser<B>): Parser<B>;
+} = (parse, fn) => (i, t) => {
+  const res = parse(i, t);
+  return isError(res) ? res : fn(res.value)(res.offset, t);
+};

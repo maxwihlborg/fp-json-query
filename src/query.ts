@@ -1,4 +1,4 @@
-import assert from "node:assert";
+import assert, { ok } from "node:assert";
 
 import type { Operator } from "./operators";
 
@@ -139,50 +139,44 @@ const parseFuncCall: p.Parser<Ast.FuncCall> = p.lazy(() => {
   });
 });
 
-const parseExpression: p.Parser<Ast.Expr> = p.lazy(() => parseLogicalExpr);
+const parseExpression = p.lazy(() => {
+  const nextPrecedance = p.oneOf([
+    p.map(token.Z_CMP_OPS, () => 4),
+    p.map(token.Z_MUL_OPS, () => 3),
+    p.map(token.Z_ADD_OPS, () => 2),
+    p.map(token.Z_LOG_OPS, () => 1),
+    (i) => p.ok(i, 0),
+  ]);
 
-const parseLogicalExpr: p.Parser<Ast.Expr> = p.lazy(() =>
-  p.oneOf([
+  const parseBinaryExpr = (np: number, lhs: Ast.Expr) =>
     p.map(
-      p.tuple([parseEqualityExpression, token.Z_LOG_OPS, parseLogicalExpr]),
-      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
-    ),
-    parseEqualityExpression,
-  ]),
-);
+      p.tuple([
+        p.oneOf([
+          token.Z_CMP_OPS,
+          token.Z_LOG_OPS,
+          token.Z_MUL_OPS,
+          token.Z_ADD_OPS,
+        ]),
+        parse(np),
+      ]),
+      ([op, rhs]) => node.binOp(lhs, op, rhs),
+    );
 
-const parseEqualityExpression: p.Parser<Ast.Expr> = p.lazy(() =>
-  p.oneOf([
-    p.map(
-      p.tuple([parseAddativeExpr, token.Z_CMP_OPS, parseAddativeExpr]),
-      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
-    ),
-    p.map(token.BANG_D, () =>
-      node.binOp(node.fn("id", []), "!=", node.id("null")),
-    ),
-    parseAddativeExpr,
-  ]),
-);
+  const parse = (pp: number): p.Parser<Ast.Expr> =>
+    p.gen(function* (_) {
+      let lhs = yield* _(parsePrimaryExpr);
+      while (true) {
+        const np = yield* _(p.peek(nextPrecedance));
+        if (np === 0 || np <= pp) {
+          break;
+        }
+        lhs = yield* _(parseBinaryExpr(np, lhs));
+      }
+      return lhs;
+    });
 
-const parseAddativeExpr: p.Parser<Ast.Expr> = p.lazy(() =>
-  p.oneOf([
-    p.map(
-      p.tuple([parseMultiplicativeExpr, token.Z_ADD_OPS, parseAddativeExpr]),
-      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
-    ),
-    parseMultiplicativeExpr,
-  ]),
-);
-
-const parseMultiplicativeExpr: p.Parser<Ast.Expr> = p.lazy(() =>
-  p.oneOf([
-    p.map(
-      p.tuple([parsePrimaryExpr, token.Z_MUL_OPS, parseMultiplicativeExpr]),
-      ([lhs, op, rhs]) => node.binOp(lhs, op, rhs),
-    ),
-    parsePrimaryExpr,
-  ]),
-);
+  return parse(0);
+});
 
 const parsePrimaryExpr: p.Parser<Ast.Expr> = p.lazy(() =>
   p.oneOf([
@@ -208,30 +202,34 @@ const parseQuery: p.Parser<Ast.FuncCall> = p.lazy(() => parseFuncCall);
 export const parse = p.make(LEXER_RE, parseQuery);
 
 export function show(e: Ast.Expr): IterableIterator<string> {
-  function* step(p: string, e: Ast.Expr): IterableIterator<string> {
+  function* step(
+    p: string,
+    e: Ast.Expr,
+    last: boolean,
+  ): IterableIterator<string> {
+    const ws = p + (last ? "└─" : "├─");
+    const np = p + (last ? "  " : "│ ");
     switch (e.t) {
       case NodeType.Num:
-        yield `${p}(nr: ${e.val})`;
+        yield `${ws}nr: ${e.val}`;
         break;
       case NodeType.ID:
-        yield `${p}(id: ${e.val})`;
+        yield `${ws}id: ${e.val}`;
         break;
       case NodeType.BinaryOp:
-        yield `${p}(${e.op}`;
-        yield* step(p + "  ", e.lhs);
-        yield* step(p + "  ", e.rhs);
-        yield `${p})`;
+        yield `${ws}op: ${e.op}`;
+        yield* step(np, e.lhs, false);
+        yield* step(np, e.rhs, true);
         break;
       case NodeType.FuncCall:
-        yield `${p}(fn: ${e.name}`;
-        for (const a of e.args) {
-          yield* step(p + "  ", a);
+        yield `${ws}fn: ${e.name}`;
+        for (let i = 0, len = e.args.length; i < len; i++) {
+          yield* step(np, e.args[i], i === len - 1);
         }
-        yield `${p})`;
         break;
     }
   }
-  return step("", e);
+  return step("", e, true);
 }
 
 export function reduce(main: Ast.FuncCall): Ast.IR {

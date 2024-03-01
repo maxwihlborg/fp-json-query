@@ -39,12 +39,14 @@ cli
       },
     ) => {
       if (options.showAst) {
+        process.stdout.write(`ex: ${q}\n`);
         for (const line of query.show(query.parse(q))) {
           process.stdout.write(line + "\n");
         }
         return;
       }
       if (options.showIr) {
+        process.stdout.write(`ex: ${q}\n`);
         for (const line of query.show(query.reduce(query.parse(q)))) {
           process.stdout.write(line + "\n");
         }
