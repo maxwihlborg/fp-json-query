@@ -14,12 +14,12 @@ importers:
       '@types/node':
         specifier: ^24.0.3
         version: 24.0.3
-      '@vercel/ncc':
-        specifier: ^0.38.1
-        version: 0.38.3
       cac:
         specifier: ^6.7.14
         version: 6.7.14
+      esbuild:
+        specifier: ^0.25.5
+        version: 0.25.5
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
@@ -314,10 +314,6 @@ packages:
 
   '@types/node@24.0.3':
     resolution: {integrity: sha512-R4I/kzCYAdRLzfiCabn9hxWfbuHS573x+r0dJMkkzThEa7pbrcDWK+9zu3e7aBOouf+rQAciqPFMnxwr0aWgKg==}
-
-  '@vercel/ncc@0.38.3':
-    resolution: {integrity: sha512-rnK6hJBS6mwc+Bkab+PGPs9OiS0i/3kdTO+CkI8V0/VrW3vmz7O2Pxjw/owOlmo6PKEIxRSeZKv/kuL9itnpYA==}
-    hasBin: true
 
   '@vitest/expect@3.2.3':
     resolution: {integrity: sha512-W2RH2TPWVHA1o7UmaFKISPvdicFJH+mjykctJFoAkUw+SPTJTGjUNdKscFBrqM7IPnCVu6zihtKYa7TkZS1dkQ==}
@@ -863,8 +859,6 @@ snapshots:
   '@types/node@24.0.3':
     dependencies:
       undici-types: 7.8.0
-
-  '@vercel/ncc@0.38.3': {}
 
   '@vitest/expect@3.2.3':
     dependencies:

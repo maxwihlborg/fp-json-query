@@ -13,14 +13,13 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "fq": "./bin/cli.js"
+    "fq": "./dist/index.js"
   },
   "files": [
-    "dist",
-    "bin"
+    "dist"
   ],
   "scripts": {
-    "build": "ncc build -o dist ./src/index.ts",
+    "build": "tsc && esbuild --platform=node --format=esm --bundle --minify ./src/index.ts --outdir=dist",
     "build:readme": "./scripts/update-readme.js",
     "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts && ./scripts/update-readme.js",
     "test": "vitest"
@@ -28,8 +27,8 @@
   "devDependencies": {
     "@tsconfig/node18": "^18.2.2",
     "@types/node": "^24.0.3",
-    "@vercel/ncc": "^0.38.1",
     "cac": "^6.7.14",
+    "esbuild": "^0.25.5",
     "rimraf": "^6.0.1",
     "typescript": "^5.3.3",
     "vitest": "^3.2.3"

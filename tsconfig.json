@@ -1,6 +1,7 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
+    "noEmit": true,
     "moduleResolution": "Bundler",
     "types": ["vitest/importMeta"],
     "module": "ESNext"

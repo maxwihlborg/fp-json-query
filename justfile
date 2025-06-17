@@ -12,8 +12,8 @@ build:
 test:
     pnpm run test --run
 
-dev: build
-    ./bin/cli.js
+dev *args: build
+    ./dist/index.js {{ args }}
 
 install:
     pnpm install
