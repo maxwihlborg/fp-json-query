@@ -19,9 +19,9 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc && esbuild --platform=node --format=esm --bundle --minify ./src/index.ts --outdir=dist",
+    "build": "tsc && esbuild --platform=node --format=esm --bundle ./src/index.ts --outdir=dist",
     "build:readme": "./scripts/update-readme.js",
-    "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts && ./scripts/update-readme.js",
+    "prepublish": "rimraf dist && pnpm run build --minify && ./scripts/update-readme.js",
     "test": "vitest"
   },
   "devDependencies": {

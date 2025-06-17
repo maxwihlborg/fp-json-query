@@ -23,7 +23,7 @@ function isIterableIteratorLike(arg: unknown): arg is IterableIterator<any> {
 cli
   .command("<query> [file]", "Run fp style operators on input file or stdin")
   .option("-o, --out <path>", "Write the result to a file")
-  .option("-c, --commit", "Update file in place when not stdin")
+  .option("-c, --commit", "Update file in place when reading from a file")
   .option("--no-nl", "Control new line at the end output")
   .option("--show-ast", "Dump AST to stdout")
   .option("--show-ir", "Dump intermediate representation to stdout")

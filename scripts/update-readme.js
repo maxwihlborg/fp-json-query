@@ -45,7 +45,7 @@ function sub(id, fn) {
  * @param {string[]} args
  */
 async function fq(...args) {
-  const pid = spawn(path.resolve(__dirname, "../bin/cli.js"), args, {
+  const pid = spawn(path.resolve(__dirname, "../dist/index.js"), args, {
     stdio: "pipe",
     shell: false,
   });

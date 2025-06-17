@@ -2,7 +2,7 @@
 
 <!-- BEGIN BADGES -->
 
-![version](https://img.shields.io/badge/version-0.1.2-blue.svg)
+![version](https://img.shields.io/badge/version-0.1.3-blue.svg)
 ![tests](https://img.shields.io/badge/tests-passing-green.svg)
 [![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
@@ -76,7 +76,7 @@ The final result of these operations is written to the `users-out.json` file.
 <!-- BEGIN USAGE -->
 
 ```
-fq/0.1.0
+fq/0.1.3
 
 Usage:
   $ fq <query> [file]
@@ -91,6 +91,7 @@ For more info, run any command with the `--help` flag:
 
 Options:
   -o, --out <path>  Write the result to a file 
+  -c, --commit      Update file in place when reading from a file 
   --no-nl           Control new line at the end output (default: true)
   --show-ast        Dump AST to stdout 
   --show-ir         Dump intermediate representation to stdout 
