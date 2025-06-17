@@ -1,9 +1,7 @@
 {
   "name": "fp-json-cli",
-  "description": "Simple cli inspired by jq",
   "version": "0.1.2",
-  "type": "module",
-  "repository": "github:maxwihlborg/fp-json-query",
+  "description": "Simple cli inspired by jq",
   "keywords": [
     "cli",
     "fp",
@@ -11,12 +9,9 @@
     "json",
     "query"
   ],
-  "scripts": {
-    "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts && ./scripts/update-readme.js",
-    "build": "ncc build -o dist ./src/index.ts",
-    "build:readme": "./scripts/update-readme.js",
-    "test": "vitest"
-  },
+  "repository": "github:maxwihlborg/fp-json-query",
+  "license": "MIT",
+  "type": "module",
   "bin": {
     "fq": "./bin/cli.js"
   },
@@ -24,14 +19,19 @@
     "dist",
     "bin"
   ],
-  "license": "MIT",
+  "scripts": {
+    "build": "ncc build -o dist ./src/index.ts",
+    "build:readme": "./scripts/update-readme.js",
+    "prepublish": "rimraf dist && ncc build -m -o dist ./src/index.ts && ./scripts/update-readme.js",
+    "test": "vitest"
+  },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.2",
-    "@types/node": "^20.11.19",
+    "@types/node": "^24.0.3",
     "@vercel/ncc": "^0.38.1",
     "cac": "^6.7.14",
-    "rimraf": "^5.0.5",
+    "rimraf": "^6.0.1",
     "typescript": "^5.3.3",
-    "vitest": "^1.3.1"
+    "vitest": "^3.2.3"
   }
 }

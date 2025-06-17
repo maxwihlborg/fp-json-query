@@ -24,6 +24,8 @@ export class SingleShotGen<T, A> implements Generator<T, A> {
     throw e;
   }
 
+  [Symbol.dispose]() {}
+
   [Symbol.iterator](): Generator<T, A> {
     return new SingleShotGen<T, A>(this.self);
   }
