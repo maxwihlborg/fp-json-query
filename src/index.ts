@@ -23,6 +23,7 @@ function isIterableIteratorLike(arg: unknown): arg is IterableIterator<any> {
 cli
   .command("<query> [file]", "Run fp style operators on input file or stdin")
   .option("-o, --out <path>", "Write the result to a file")
+  .option("-c, --commit", "Update file in place when not stdin")
   .option("--no-nl", "Control new line at the end output")
   .option("--show-ast", "Dump AST to stdout")
   .option("--show-ir", "Dump intermediate representation to stdout")
@@ -36,6 +37,7 @@ cli
       options: {
         out?: string;
         nl: boolean;
+        commit: boolean;
         showAst?: boolean;
         showIr?: boolean;
       },
@@ -70,7 +72,9 @@ cli
 
       const outputStream: Writable = options.out
         ? fs.createWriteStream(options.out)
-        : process.stdout;
+        : file != null && options.commit
+          ? fs.createWriteStream(file)
+          : process.stdout;
 
       if (isIterableIteratorLike(out)) {
         outputStream.write(JSON.stringify(Array.from(out), null, 2));
@@ -110,7 +114,7 @@ cli
   });
 
 cli.help();
-cli.version("0.1.0");
+cli.version("0.1.3");
 
 try {
   cli.parse(process.argv, { run: false });
