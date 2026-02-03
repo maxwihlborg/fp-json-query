@@ -92,7 +92,7 @@ For more info, run any command with the `--help` flag:
 Options:
   -o, --out <path>       Write the result to a file 
   -c, --commit           Update file in place when reading from a file (default: false)
-  -n, --indent <number>  Indent level (default: 4)
+  -n, --indent <number>  Indent level (default: 2)
   --color                Color output (default: true)
   --show-ast             Dump AST to stdout (default: false)
   --show-ir              Dump intermediate representation to stdout (default: false)
@@ -113,6 +113,7 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | :---------------- | :-------- |
 | add               |           |
 | average           | avg, mean |
+| concat            | join      |
 | constant          | c         |
 | count             | len       |
 | divide            | div       |
@@ -126,6 +127,7 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 | get               | pluck     |
 | greaterThan       | gt        |
 | greaterThanEquals | gte       |
+| groupBy           | group     |
 | identity          | id, i     |
 | includes          | has       |
 | last              | lst       |

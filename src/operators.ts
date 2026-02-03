@@ -381,6 +381,17 @@ export const merge = fnOp((fn) => (it) => {
   return acc;
 });
 
+export const concat = fnOp(
+  (fn) => (it) => {
+    let acc: unknown[] = [];
+    for (const x of it) {
+      acc = acc.concat(fn(x));
+    }
+    return acc;
+  },
+  { alias: ["join"] },
+);
+
 export const sum = fnOp(
   (fn) => (it) => {
     let acc = 0;

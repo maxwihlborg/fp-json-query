@@ -14,13 +14,19 @@ import * as query from "./query";
 const name = "fq";
 const cli = cac(name);
 
-interface Options {
+interface QueryOptions {
   out?: string;
   commit: boolean;
   indent: number;
   color: boolean;
   showAst: boolean;
   showIr: boolean;
+}
+
+interface ListOptions {
+  json: boolean;
+  indent: number;
+  color: boolean;
 }
 
 cli
@@ -30,7 +36,7 @@ cli
     default: false,
   })
   .option("-n, --indent <number>", "Indent level", {
-    default: 4,
+    default: 2,
   })
   .option("--color", "Color output", {
     default: true,
@@ -44,55 +50,64 @@ cli
   .example(
     `${name} "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json`,
   )
-  .action(async (q: string, file: string | undefined, options: Options) => {
-    if (options.showAst) {
-      process.stdout.write(`ex: ${q}\n`);
-      for (const line of query.show(query.parse(q))) {
-        process.stdout.write(line + "\n");
+  .action(
+    async (q: string, file: string | undefined, options: QueryOptions) => {
+      if (options.showAst) {
+        process.stdout.write(`ex: ${q}\n`);
+        for (const line of query.show(query.parse(q))) {
+          process.stdout.write(line + "\n");
+        }
+        return;
       }
-      return;
-    }
-    if (options.showIr) {
-      process.stdout.write(`ex: ${q}\n`);
-      for (const line of query.show(query.reduce(query.parse(q)))) {
-        process.stdout.write(line + "\n");
+      if (options.showIr) {
+        process.stdout.write(`ex: ${q}\n`);
+        for (const line of query.show(query.reduce(query.parse(q)))) {
+          process.stdout.write(line + "\n");
+        }
+        return;
       }
-      return;
-    }
 
-    const program = query.compile(q);
+      const program = query.compile(q);
 
-    const inputStream: Readable = file
-      ? fs.createReadStream(file)
-      : process.stdin;
+      const inputStream: Readable = file
+        ? fs.createReadStream(file)
+        : process.stdin;
 
-    let buffer = Buffer.from("", "utf8");
-    for await (const chunk of inputStream) {
-      buffer = Buffer.concat([buffer, chunk]);
-    }
+      let buffer = Buffer.from("", "utf8");
+      for await (const chunk of inputStream) {
+        buffer = Buffer.concat([buffer, chunk]);
+      }
 
-    const out = program(JSON.parse(buffer.toString()));
+      const out = program(JSON.parse(buffer.toString()));
 
-    const outputStream: Writable = options.out
-      ? fs.createWriteStream(options.out)
-      : file != null && options.commit
-        ? fs.createWriteStream(file)
-        : process.stdout;
+      const outputStream: Writable = options.out
+        ? fs.createWriteStream(options.out)
+        : file != null && options.commit
+          ? fs.createWriteStream(file)
+          : process.stdout;
 
-    if (out == null) {
-      process.stdout.write(`${dim(String(out))}\n`);
-    } else {
-      const toFile = options.out != null || (file != null && options.commit);
-      const color = !toFile && options.color;
-      printer.print(outputStream, out, { ...options, color });
-    }
-  });
+      if (out == null) {
+        process.stdout.write(`${dim(String(out))}\n`);
+      } else {
+        const toFile = options.out != null || (file != null && options.commit);
+        const color = !toFile && options.color;
+        printer.print(outputStream, out, { ...options, color });
+      }
+    },
+  );
 
 cli
   .command("list", "List available operators")
-  .option("-n, --indent <number>", "Indent level")
-  .option("--json", "Return operations as JSON")
-  .action(async (options: { json: boolean; indent?: number }) => {
+  .option("-n, --indent <number>", "Indent level", {
+    default: 2,
+  })
+  .option("--json", "Return operations as JSON", {
+    default: false,
+  })
+  .option("--color", "Color output", {
+    default: true,
+  })
+  .action(async (options: ListOptions) => {
     const arr = Object.entries(ops)
       .map(([name, op]) => ({
         name,

@@ -31,8 +31,8 @@ export type JsonToken =
   | { t: TokenType.Colon };
 
 export interface PrintOptions {
-  indent?: number;
-  color?: boolean;
+  indent: number;
+  color: boolean;
 }
 
 export function isIterable(arg: unknown): arg is Iterable<unknown> {
@@ -81,7 +81,7 @@ function* tokenizeObject(
 }
 
 function* tokenizeValue(value: unknown): IterableIterator<JsonToken> {
-  if (value === null) {
+  if (value == null) {
     yield { t: TokenType.Null };
   } else if (typeof value === "boolean") {
     yield { t: TokenType.Boolean, v: value };
@@ -102,10 +102,10 @@ export function* tokenize(value: unknown): IterableIterator<JsonToken> {
 
 export function* render(
   tokens: Iterable<JsonToken>,
-  opts: PrintOptions = {},
+  opts: PrintOptions,
 ): IterableIterator<string> {
   const indentSize = opts.indent ?? 2;
-  const theme = createTheme(Boolean(opts.color && isColorSupported));
+  const theme = createTheme(opts.color && isColorSupported);
   let depth = 0;
   let needsIndent = false;
 
