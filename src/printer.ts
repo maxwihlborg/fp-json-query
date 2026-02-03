@@ -1,8 +1,7 @@
 import { Readable, type Writable } from "node:stream";
 import { createInterface } from "node:readline";
 
-import { blue, gray, green, magenta, yellow } from "colorette";
-import { isIterable } from "./helpers";
+import { createColors, isColorSupported } from "colorette";
 
 enum TokenType {
   ArrayStart,
@@ -31,22 +30,27 @@ export type JsonToken =
   | { t: TokenType.Comma }
   | { t: TokenType.Colon };
 
-export interface PrintOpts {
+export interface PrintOptions {
   indent?: number;
-  trailingNewline?: boolean;
+  color?: boolean;
 }
 
-const id = (s: string) => s;
+export function isIterable(arg: unknown): arg is Iterable<unknown> {
+  return arg != null && typeof arg === "object" && Symbol.iterator in arg;
+}
 
-const theme = {
-  key: blue,
-  str: green,
-  num: yellow,
-  bool: magenta,
-  null: gray,
-  bracket: id,
-  punctuation: id,
-};
+function createTheme(useColor: boolean) {
+  const { blue, green, yellow, magenta, gray } = createColors({ useColor });
+  return {
+    key: blue,
+    str: green,
+    num: yellow,
+    bool: magenta,
+    null: gray,
+    bracket: String,
+    punctuation: String,
+  };
+}
 
 function* tokenizeIterable(it: Iterable<unknown>): IterableIterator<JsonToken> {
   yield { t: TokenType.ArrayStart };
@@ -98,9 +102,10 @@ export function* tokenize(value: unknown): IterableIterator<JsonToken> {
 
 export function* render(
   tokens: Iterable<JsonToken>,
-  opts: PrintOpts = {},
+  opts: PrintOptions = {},
 ): IterableIterator<string> {
   const indentSize = opts.indent ?? 2;
+  const theme = createTheme(Boolean(opts.color && isColorSupported));
   let depth = 0;
   let needsIndent = false;
 
@@ -163,22 +168,9 @@ export function* render(
         break;
     }
   }
+  yield "\n";
 }
 
-async function* lines(chunks: Iterable<string>) {
-  for await (const line of createInterface(Readable.from(chunks))) {
-    yield line + "\n";
-  }
-}
-
-export async function printIt(w: Writable, value: Iterable<unknown>) {
-  for await (const line of lines(render(tokenizeIterable(value)))) {
-    w.write(line);
-  }
-}
-
-export async function print(w: Writable, value: unknown) {
-  for await (const line of lines(render(tokenize(value)))) {
-    w.write(line);
-  }
+export function print(w: Writable, value: unknown, options: PrintOptions) {
+  Readable.from(render(tokenize(value), options)).pipe(w);
 }

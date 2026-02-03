@@ -2,7 +2,7 @@
 
 <!-- BEGIN BADGES -->
 
-![version](https://img.shields.io/badge/version-0.1.4-blue.svg)
+![version](https://img.shields.io/badge/version-0.1.5-blue.svg)
 ![tests](https://img.shields.io/badge/tests-passing-green.svg)
 [![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
@@ -76,7 +76,7 @@ The final result of these operations is written to the `users-out.json` file.
 <!-- BEGIN USAGE -->
 
 ```
-fq/0.1.4
+fq/0.1.5
 
 Usage:
   $ fq <query> [file]
@@ -90,13 +90,14 @@ For more info, run any command with the `--help` flag:
   $ fq list --help
 
 Options:
-  -o, --out <path>  Write the result to a file
-  -c, --commit      Update file in place when reading from a file
-  --color           Force color output
-  --show-ast        Dump AST to stdout
-  --show-ir         Dump intermediate representation to stdout
-  -h, --help        Display this message
-  -v, --version     Display version number
+  -o, --out <path>       Write the result to a file 
+  -c, --commit           Update file in place when reading from a file (default: false)
+  -n, --indent <number>  Indent level (default: 4)
+  --color                Color output (default: true)
+  --show-ast             Dump AST to stdout (default: false)
+  --show-ir              Dump intermediate representation to stdout (default: false)
+  -h, --help             Display this message 
+  -v, --version          Display version number 
 
 Examples:
 fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json
