@@ -6,10 +6,12 @@ import type { Readable, Writable } from "node:stream";
 
 import { cac } from "cac";
 
-import { dim } from "colorette";
+import { dim, yellow } from "colorette";
 import * as ops from "./operators";
 import * as printer from "./printer";
 import * as query from "./query";
+import * as tc from "./typecheck";
+import { Operator } from "./types";
 
 const name = "fq";
 const cli = cac(name);
@@ -21,6 +23,7 @@ interface QueryOptions {
   color: boolean;
   showAst: boolean;
   showIr: boolean;
+  typecheck: boolean;
 }
 
 interface ListOptions {
@@ -47,6 +50,9 @@ cli
   .option("--show-ir", "Dump intermediate representation to stdout", {
     default: false,
   })
+  .option("--typecheck", "Run type checker and show warnings", {
+    default: true,
+  })
   .example(
     `${name} "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json`,
   )
@@ -67,7 +73,29 @@ cli
         return;
       }
 
-      const program = query.compile(q);
+      const ir = query.reduce(query.parse(q));
+
+      if (options.typecheck) {
+        const kernel = Object.entries(ops).reduce<Operator.Kernel>(
+          (a, [name, op]) => {
+            a[name] = op;
+            op.meta.alias.forEach((alias) => {
+              a[alias] = op;
+            });
+            return a;
+          },
+          {},
+        );
+
+        const errors = tc.typecheck(ir, kernel);
+        for (const err of errors) {
+          process.stderr.write(
+            `[${yellow(`warning`)}]: ${tc.showError(err)}\n`,
+          );
+        }
+      }
+
+      const program = query.build(ir);
 
       const inputStream: Readable = file
         ? fs.createReadStream(file)
@@ -112,6 +140,7 @@ cli
       .map(([name, op]) => ({
         name,
         alias: op.meta.alias,
+        symbol: op.meta.symbol,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -129,7 +158,7 @@ cli
   });
 
 cli.help();
-cli.version("0.1.5");
+cli.version("0.1.6");
 
 try {
   cli.parse(process.argv, { run: false });

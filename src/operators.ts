@@ -1,63 +1,14 @@
-export namespace Operator {
-  export type Any = Generator<LazyFunc[]> | Operator<LazyFunc[]>;
+import {
+  mapperOp,
+  fnOp,
+  producerOp,
+  reducerOp,
+  unknownOp,
+  biReducerOp,
+  biProducerOp,
+} from "./types";
 
-  export interface LazyFunc {
-    (...as: any[]): any;
-  }
-
-  export interface LazyIter {
-    (it: Iterable<any>): IterableIterator<any>;
-  }
-
-  export type Generator<A extends any[]> = {
-    t: OperatorType.Generator;
-    fn(...as: [...A]): LazyIter;
-    meta: Meta;
-  };
-
-  export type Operator<A extends any[]> = {
-    t: OperatorType.Function;
-    fn(...as: [...A]): LazyFunc;
-    meta: Meta;
-  };
-
-  export interface Meta {
-    alias: string[];
-  }
-}
-
-enum OperatorType {
-  Generator,
-  Function,
-}
-
-const genOp: {
-  <T extends Operator.LazyFunc[]>(
-    fn: (...as: [...T]) => Operator.LazyIter,
-    meta?: Partial<Operator.Meta>,
-  ): Operator.Generator<T>;
-} = (fn, meta) => ({
-  t: OperatorType.Generator,
-  fn,
-  meta: {
-    alias: meta?.alias ?? [],
-  },
-});
-
-const fnOp: {
-  <T extends Operator.LazyFunc[]>(
-    fn: (...as: [...T]) => Operator.LazyFunc,
-    meta?: Partial<Operator.Meta>,
-  ): Operator.Operator<T>;
-} = (fn, meta) => ({
-  t: OperatorType.Function,
-  fn,
-  meta: {
-    alias: meta?.alias ?? [],
-  },
-});
-
-export const map = genOp(
+export const map = mapperOp(
   (fn) =>
     function* (it) {
       for (const x of it) {
@@ -66,7 +17,7 @@ export const map = genOp(
     },
 );
 
-export const filter = genOp(
+export const filter = mapperOp(
   (fn) =>
     function* (it) {
       for (const x of it) {
@@ -77,7 +28,7 @@ export const filter = genOp(
     },
 );
 
-export const unique = genOp(
+export const unique = mapperOp(
   (fn) =>
     function* (it) {
       const seen = new Set();
@@ -91,7 +42,7 @@ export const unique = genOp(
   { alias: ["uniq"] },
 );
 
-export const reverse = genOp(
+export const reverse = mapperOp(
   () =>
     function* (it) {
       const arr = Array.from(it);
@@ -99,9 +50,10 @@ export const reverse = genOp(
         yield arr[i];
       }
     },
+  { alias: ["rev"] },
 );
 
-export const sort = genOp(
+export const sort = mapperOp(
   (fn) =>
     function* (it) {
       yield* Array.from(it).sort((a, b) => {
@@ -118,7 +70,7 @@ export const sort = genOp(
     },
 );
 
-export const entries = genOp(
+export const entries = producerOp(
   (fn) =>
     function* (x) {
       yield* Object.entries(fn(x)).map(([key, value]) => ({
@@ -128,7 +80,38 @@ export const entries = genOp(
     },
 );
 
-export const skip = genOp(
+export const keys = producerOp(
+  (fn) =>
+    function* (x) {
+      yield* Object.keys(fn(x));
+    },
+);
+
+export const values = producerOp(
+  (fn) =>
+    function* (x) {
+      yield* Object.values(fn(x));
+    },
+);
+
+export const fromEntries = reducerOp((fn) => (it) => {
+  const result: Record<string, any> = {};
+  for (const x of it) {
+    const { key, value } = fn(x);
+    result[key] = value;
+  }
+  return result;
+});
+
+export const mapValues = fnOp((fn) => (x) => {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(x)) {
+    result[key] = fn(value);
+  }
+  return result;
+});
+
+export const skip = mapperOp(
   (fn) =>
     function* (it) {
       let i = 0;
@@ -139,7 +122,7 @@ export const skip = genOp(
     },
 );
 
-export const take = genOp(
+export const take = mapperOp(
   (fn) =>
     function* (it) {
       let i = 0;
@@ -150,7 +133,7 @@ export const take = genOp(
     },
 );
 
-export const range = genOp(
+export const range = producerOp(
   (min, max, step = () => 1) =>
     function* () {
       const a = min();
@@ -170,17 +153,17 @@ export const range = genOp(
     },
 );
 
-export const flatMap = genOp(
+export const flatMap = mapperOp(
   (fn) =>
     function* (it) {
       for (const x of it) {
         yield* fn(x);
       }
     },
-  { alias: ["chain"] },
+  { alias: ["chain", "concat"] },
 );
 
-export const count = fnOp(
+export const count = reducerOp(
   () => (it) => {
     let i = 0;
     for (const _ of it) {
@@ -191,9 +174,9 @@ export const count = fnOp(
   { alias: ["len"] },
 );
 
-export const constant = fnOp((ex) => (x) => ex(x), { alias: ["c"] });
+export const constant = unknownOp((ex) => (x) => ex(x), { alias: ["c"] });
 
-export const get = fnOp(
+export const get = unknownOp(
   (...as) =>
     (x) =>
       as.reduce((c, a) => c?.[a(x)], x),
@@ -224,7 +207,7 @@ export const omit = fnOp((...as) => (x) => {
   }, {});
 });
 
-export const project = fnOp((k, v) => (x) => ({ [k(x)]: v(x) }), {
+export const project = biReducerOp((k, v) => (x) => ({ [k(x)]: v(x) }), {
   alias: ["p"],
 });
 
@@ -235,75 +218,83 @@ export const union = fnOp(
   { alias: ["u"] },
 );
 
-export const identity = fnOp(() => (x) => x, { alias: ["id", "i"] });
+export const identity = unknownOp(() => (x) => x, { alias: ["id", "i"] });
 
 export const add = fnOp(
   (h, ...tail) =>
     (x) =>
       tail.reduce((a, b) => a + b(x), h(x)),
+  { alias: [], symbol: "+" },
 );
 
 export const subract = fnOp(
   (h, ...tail) =>
     (x) =>
       tail.reduce((a, b) => a - b(x), h(x)),
-  { alias: ["sub"] },
+  { alias: ["sub"], symbol: "-" },
 );
 
 export const multiply = fnOp(
   (h, ...tail) =>
     (x) =>
       tail.reduce((a, b) => a * b(x), h(x)),
-  { alias: ["mul"] },
+  { alias: ["mul"], symbol: "*" },
 );
 
 export const divide = fnOp(
   (h, ...tail) =>
     (x) =>
       tail.reduce((a, b) => a / b(x), h(x)),
-  { alias: ["div"] },
+  { alias: ["div"], symbol: "/" },
+);
+
+export const modulo = fnOp(
+  (h, ...tail) =>
+    (x) =>
+      tail.reduce((a, b) => a % b(x), h(x)),
+  { alias: ["mod"], symbol: "%" },
 );
 
 export const greaterThan = fnOp(
   (a, b) => (x) => {
     return a(x) > b(x);
   },
-  { alias: ["gt"] },
+  { alias: ["gt"], symbol: ">" },
 );
 
 export const greaterThanEquals = fnOp(
   (a, b) => (x) => {
     return a(x) >= b(x);
   },
-  { alias: ["gte"] },
+  { alias: ["gte"], symbol: ">=" },
 );
 
 export const lessThan = fnOp(
   (a, b) => (x) => {
     return a(x) < b(x);
   },
-  { alias: ["lt"] },
+  { alias: ["lt"], symbol: "<" },
 );
 
 export const lessThanEquals = fnOp(
   (a, b) => (x) => {
     return a(x) <= b(x);
   },
-  { alias: ["lte"] },
+  { alias: ["lte"], symbol: "<=" },
 );
 
 export const notEquals = fnOp(
   (a, b) => (x) => {
     return a(x) != b(x);
   },
-  { alias: ["neq"] },
+  { alias: ["neq"], symbol: "!=" },
 );
 
 export const equals = fnOp(
   (a, b) => (x) => {
     return a(x) === b(x);
   },
-  { alias: ["eq"] },
+  { alias: ["eq"], symbol: "==" },
 );
 
 export const includes = fnOp(
@@ -316,29 +307,51 @@ export const includes = fnOp(
   { alias: ["has"] },
 );
 
-export const not = fnOp((a) => (x) => !a(x));
+export const not = fnOp((a) => (x) => !a(x), { alias: [], symbol: "!" });
 
-export const flow = fnOp(
+export const bool = fnOp((a) => (x) => !!a(x), { alias: [], symbol: "!!" });
+
+export const cond = unknownOp(
+  (test, then, otherwise) => (x) => (test(x) ? then(x) : otherwise(x)),
+  { alias: [], symbol: "?:" },
+);
+
+export const flow = unknownOp(
   (...as) =>
     (x) =>
       as.reduce((a, b) => b(a), x),
+  { symbol: "|" },
 );
 
-export const every = fnOp(
+export const every = biReducerOp(
   (...as) =>
     (x) =>
       as.every((a) => a(x)),
   { alias: ["and"] },
 );
 
-export const some = fnOp(
+export const some = biReducerOp(
   (...as) =>
     (x) =>
       as.some((a) => a(x)),
   { alias: ["or"] },
 );
 
-export const first = fnOp(
+export const opAnd = fnOp(
+  (...as) =>
+    (x) =>
+      as.reduce((acc, a) => acc && a(x), true),
+  { alias: [], symbol: "&&" },
+);
+
+export const opOr = fnOp(
+  (...as) =>
+    (x) =>
+      as.reduce((acc, a) => acc || a(x), false),
+  { alias: [], symbol: "||" },
+);
+
+export const first = reducerOp(
   () => (it) => {
     for (const x of it) {
       return x;
@@ -348,7 +361,7 @@ export const first = fnOp(
   { alias: ["head", "fst"] },
 );
 
-export const last = fnOp(
+export const last = reducerOp(
   () => (it) => {
     let result;
     for (const x of it) {
@@ -359,7 +372,7 @@ export const last = fnOp(
   { alias: ["lst"] },
 );
 
-export const tail = genOp(
+export const tail = mapperOp(
   () =>
     function* (it) {
       let first = true;
@@ -373,7 +386,7 @@ export const tail = genOp(
     },
 );
 
-export const merge = fnOp((fn) => (it) => {
+export const merge = reducerOp((fn) => (it) => {
   let acc = {};
   for (const x of it) {
     acc = { ...acc, ...fn(x) };
@@ -381,18 +394,7 @@ export const merge = fnOp((fn) => (it) => {
   return acc;
 });
 
-export const concat = fnOp(
-  (fn) => (it) => {
-    let acc: unknown[] = [];
-    for (const x of it) {
-      acc = acc.concat(fn(x));
-    }
-    return acc;
-  },
-  { alias: ["join"] },
-);
-
-export const sum = fnOp(
+export const sum = reducerOp(
   (fn) => (it) => {
     let acc = 0;
     for (const x of it) {
@@ -403,7 +405,7 @@ export const sum = fnOp(
   { alias: ["total"] },
 );
 
-export const average = fnOp(
+export const average = reducerOp(
   (fn) => (it) => {
     let sum = 0;
     let count = 0;
@@ -416,15 +418,15 @@ export const average = fnOp(
   { alias: ["avg", "mean"] },
 );
 
-export const median = fnOp((fn) => (it) => {
-  const values = Array.from(it, fn).sort((a, b) => a - b);
+export const median = reducerOp((fn) => (it) => {
+  const values = Array.from<any, number>(it, fn).sort((a, b) => a - b);
   const len = values.length;
   if (len === 0) return 0;
   const mid = Math.floor(len / 2);
   return len % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
 });
 
-export const min = fnOp((fn) => (it) => {
+export const min = reducerOp((fn) => (it) => {
   let result;
   let minVal;
   for (const x of it) {
@@ -437,7 +439,7 @@ export const min = fnOp((fn) => (it) => {
   return result;
 });
 
-export const max = fnOp((fn) => (it) => {
+export const max = reducerOp((fn) => (it) => {
   let result;
   let maxVal;
   for (const x of it) {
@@ -450,7 +452,7 @@ export const max = fnOp((fn) => (it) => {
   return result;
 });
 
-export const groupBy = fnOp(
+export const groupBy = reducerOp(
   (fn) => (it) => {
     const groups: Record<string, any[]> = {};
     for (const x of it) {
@@ -459,4 +461,13 @@ export const groupBy = fnOp(
     return groups;
   },
   { alias: ["group"] },
+);
+
+export const array = producerOp(
+  (...as) =>
+    function* (x) {
+      for (const a of as) {
+        yield a(x);
+      }
+    },
 );

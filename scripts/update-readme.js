@@ -117,20 +117,29 @@ await fs
   )
   .then(
     sub("OPS", async () => {
-      /** @type {{name:string,alias:string[]}[]} */
+      /** @type {{name:string,alias:string[],symbol?:string}[]} */
       let arr = await fq("list", "--json").then((str) => JSON.parse(str));
-      const a = arr.reduce((a, b) => Math.max(a, b.name.length), 0);
-      const b = arr.reduce((a, b) => Math.max(a, b.alias.join(", ").length), 0);
+      const a = arr.reduce((a, b) => Math.max(a, b.name.length), "Name".length);
+      const b = arr.reduce(
+        (a, b) => Math.max(a, b.alias.join(", ").length),
+        "Alias".length,
+      );
+      const c = arr.reduce(
+        (a, b) => Math.max(a, (b.symbol ?? "").length),
+        "Symbol".length,
+      );
 
       return nls(
         arr.reduce(
-          (acc, { name, alias }) => {
-            acc.push(`| ${name.padEnd(a)} | ${alias.join(", ").padEnd(b)} |`);
+          (acc, { name, alias, symbol }) => {
+            acc.push(
+              `| ${name.padEnd(a)} | ${alias.join(", ").padEnd(b)} | ${(symbol ?? "").padEnd(c)} |`,
+            );
             return acc;
           },
           [
-            `| ${"Name".padEnd(a)} | ${"Alias".padEnd(b)} |`,
-            `| ${":".padEnd(a, "-")} | ${":".padEnd(b, "-")} |`,
+            `| ${"Name".padEnd(a)} | ${"Alias".padEnd(b)} | ${"Symbol".padEnd(c)} |`,
+            `| ${":".padEnd(a, "-")} | ${":".padEnd(b, "-")} | ${":".padEnd(c, "-")} |`,
           ],
         ),
       );

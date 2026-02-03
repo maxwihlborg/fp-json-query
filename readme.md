@@ -2,7 +2,7 @@
 
 <!-- BEGIN BADGES -->
 
-![version](https://img.shields.io/badge/version-0.1.5-blue.svg)
+![version](https://img.shields.io/badge/version-0.1.6-blue.svg)
 ![tests](https://img.shields.io/badge/tests-passing-green.svg)
 [![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
@@ -76,7 +76,7 @@ The final result of these operations is written to the `users-out.json` file.
 <!-- BEGIN USAGE -->
 
 ```
-fq/0.1.5
+fq/0.1.6
 
 Usage:
   $ fq <query> [file]
@@ -96,6 +96,7 @@ Options:
   --color                Color output (default: true)
   --show-ast             Dump AST to stdout (default: false)
   --show-ir              Dump intermediate representation to stdout (default: false)
+  --typecheck            Run type checker and show warnings (default: true)
   -h, --help             Display this message 
   -v, --version          Display version number 
 
@@ -109,59 +110,68 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 
 <!-- BEGIN OPS -->
 
-| Name              | Alias     |
-| :---------------- | :-------- |
-| add               |           |
-| average           | avg, mean |
-| concat            | join      |
-| constant          | c         |
-| count             | len       |
-| divide            | div       |
-| entries           |           |
-| equals            | eq        |
-| every             | and       |
-| filter            |           |
-| first             | head, fst |
-| flatMap           | chain     |
-| flow              |           |
-| get               | pluck     |
-| greaterThan       | gt        |
-| greaterThanEquals | gte       |
-| groupBy           | group     |
-| identity          | id, i     |
-| includes          | has       |
-| last              | lst       |
-| lessThan          | lt        |
-| lessThanEquals    | lte       |
-| map               |           |
-| max               |           |
-| median            |           |
-| merge             |           |
-| min               |           |
-| multiply          | mul       |
-| not               |           |
-| notEquals         | neq       |
-| omit              |           |
-| pick              |           |
-| project           | p         |
-| range             |           |
-| reverse           |           |
-| skip              |           |
-| some              | or        |
-| sort              |           |
-| subract           | sub       |
-| sum               | total     |
-| tail              |           |
-| take              |           |
-| union             | u         |
-| unique            | uniq      |
+| Name              | Alias         | Symbol |
+| :---------------- | :------------ | :----- |
+| add               |               | +      |
+| array             |               |        |
+| average           | avg, mean     |        |
+| bool              |               | !!     |
+| cond              |               | ?:     |
+| constant          | c             |        |
+| count             | len           |        |
+| divide            | div           | /      |
+| entries           |               |        |
+| equals            | eq            | ==     |
+| every             | and           |        |
+| filter            |               |        |
+| first             | head, fst     |        |
+| flatMap           | chain, concat |        |
+| flow              |               | |      |
+| fromEntries       |               |        |
+| get               | pluck         |        |
+| greaterThan       | gt            | >      |
+| greaterThanEquals | gte           | >=     |
+| groupBy           | group         |        |
+| identity          | id, i         |        |
+| includes          | has           |        |
+| keys              |               |        |
+| last              | lst           |        |
+| lessThan          | lt            | <      |
+| lessThanEquals    | lte           | <=     |
+| map               |               |        |
+| mapValues         |               |        |
+| max               |               |        |
+| median            |               |        |
+| merge             |               |        |
+| min               |               |        |
+| modulo            | mod           | %      |
+| multiply          | mul           | *      |
+| not               |               | !      |
+| notEquals         | neq           | !=     |
+| omit              |               |        |
+| opAnd             |               | &&     |
+| opOr              |               | ||     |
+| pick              |               |        |
+| project           | p             |        |
+| range             |               |        |
+| reverse           | rev           |        |
+| skip              |               |        |
+| some              | or            |        |
+| sort              |               |        |
+| subract           | sub           | -      |
+| sum               | total         |        |
+| tail              |               |        |
+| take              |               |        |
+| union             | u             |        |
+| unique            | uniq          |        |
+| values            |               |        |
 
 <!-- END OPS -->
 
 ## TODO
 
 - [ ] Error reporting
-- [ ] Type checking
+- [x] Type checking
 - [x] Reduce/fold operators
 - [x] Streaming parsing and serializing for large files
 - [x] Highlight output similar to `jq`
