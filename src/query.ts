@@ -1,4 +1,4 @@
-import assert, { ok } from "node:assert";
+import assert from "node:assert";
 
 import type { Operator } from "./operators";
 

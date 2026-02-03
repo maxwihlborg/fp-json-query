@@ -337,3 +337,104 @@ export const some = fnOp(
       as.some((a) => a(x)),
   { alias: ["or"] },
 );
+
+export const first = fnOp(
+  () => (it) => {
+    for (const x of it) {
+      return x;
+    }
+    return undefined;
+  },
+  { alias: ["head", "fst"] },
+);
+
+export const last = fnOp(
+  () => (it) => {
+    let result;
+    for (const x of it) {
+      result = x;
+    }
+    return result;
+  },
+  { alias: ["lst"] },
+);
+
+export const tail = genOp(
+  () =>
+    function* (it) {
+      let first = true;
+      for (const x of it) {
+        if (first) {
+          first = false;
+          continue;
+        }
+        yield x;
+      }
+    },
+);
+
+export const merge = fnOp((fn) => (it) => {
+  let acc = {};
+  for (const x of it) {
+    acc = { ...acc, ...fn(x) };
+  }
+  return acc;
+});
+
+export const sum = fnOp(
+  (fn) => (it) => {
+    let acc = 0;
+    for (const x of it) {
+      acc += fn(x);
+    }
+    return acc;
+  },
+  { alias: ["total"] },
+);
+
+export const average = fnOp(
+  (fn) => (it) => {
+    let sum = 0;
+    let count = 0;
+    for (const x of it) {
+      sum += fn(x);
+      count++;
+    }
+    return count === 0 ? 0 : sum / count;
+  },
+  { alias: ["avg", "mean"] },
+);
+
+export const median = fnOp((fn) => (it) => {
+  const values = Array.from(it, fn).sort((a, b) => a - b);
+  const len = values.length;
+  if (len === 0) return 0;
+  const mid = Math.floor(len / 2);
+  return len % 2 === 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid];
+});
+
+export const min = fnOp((fn) => (it) => {
+  let result;
+  let minVal;
+  for (const x of it) {
+    const val = fn(x);
+    if (minVal === undefined || val < minVal) {
+      minVal = val;
+      result = x;
+    }
+  }
+  return result;
+});
+
+export const max = fnOp((fn) => (it) => {
+  let result;
+  let maxVal;
+  for (const x of it) {
+    const val = fn(x);
+    if (maxVal === undefined || val > maxVal) {
+      maxVal = val;
+      result = x;
+    }
+  }
+  return result;
+});

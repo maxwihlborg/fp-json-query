@@ -12,7 +12,7 @@ describe("query", () => {
     [`c(2 / 2 - 2)`, -1],
     [`c(2 - 2/2)`, 1],
     [`c(3*1/3)`, 1],
-    [`c(1/2 * 2)`, 1], // TODO should work without parans
+    [`c(1/2 * 2)`, 1],
 
     // lt/lte
     [`c(1 < 2)`, 1],

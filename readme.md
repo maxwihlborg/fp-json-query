@@ -2,7 +2,7 @@
 
 <!-- BEGIN BADGES -->
 
-![version](https://img.shields.io/badge/version-0.1.3-blue.svg)
+![version](https://img.shields.io/badge/version-0.1.4-blue.svg)
 ![tests](https://img.shields.io/badge/tests-passing-green.svg)
 [![NPM Version](https://img.shields.io/npm/v/fp-json-cli)](https://www.npmjs.com/package/fp-json-cli)
 
@@ -76,7 +76,7 @@ The final result of these operations is written to the `users-out.json` file.
 <!-- BEGIN USAGE -->
 
 ```
-fq/0.1.3
+fq/0.1.4
 
 Usage:
   $ fq <query> [file]
@@ -90,13 +90,13 @@ For more info, run any command with the `--help` flag:
   $ fq list --help
 
 Options:
-  -o, --out <path>  Write the result to a file 
-  -c, --commit      Update file in place when reading from a file 
-  --no-nl           Control new line at the end output (default: true)
-  --show-ast        Dump AST to stdout 
-  --show-ir         Dump intermediate representation to stdout 
-  -h, --help        Display this message 
-  -v, --version     Display version number 
+  -o, --out <path>  Write the result to a file
+  -c, --commit      Update file in place when reading from a file
+  --color           Force color output
+  --show-ast        Dump AST to stdout
+  --show-ir         Dump intermediate representation to stdout
+  -h, --help        Display this message
+  -v, --version     Display version number
 
 Examples:
 fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" users.json
@@ -108,41 +108,50 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 
 <!-- BEGIN OPS -->
 
-| Name              | Alias |
-| :---------------- | :---- |
-| add               |       |
-| constant          | c     |
-| count             | len   |
-| divide            | div   |
-| entries           |       |
-| equals            | eq    |
-| every             | and   |
-| filter            |       |
-| flatMap           | chain |
-| flow              |       |
-| get               | pluck |
-| greaterThan       | gt    |
-| greaterThanEquals | gte   |
-| identity          | id, i |
-| includes          | has   |
-| lessThan          | lt    |
-| lessThanEquals    | lte   |
-| map               |       |
-| multiply          | mul   |
-| not               |       |
-| notEquals         | neq   |
-| omit              |       |
-| pick              |       |
-| project           | p     |
-| range             |       |
-| reverse           |       |
-| skip              |       |
-| some              | or    |
-| sort              |       |
-| subract           | sub   |
-| take              |       |
-| union             | u     |
-| unique            | uniq  |
+| Name              | Alias     |
+| :---------------- | :-------- |
+| add               |           |
+| average           | avg, mean |
+| constant          | c         |
+| count             | len       |
+| divide            | div       |
+| entries           |           |
+| equals            | eq        |
+| every             | and       |
+| filter            |           |
+| first             | head, fst |
+| flatMap           | chain     |
+| flow              |           |
+| get               | pluck     |
+| greaterThan       | gt        |
+| greaterThanEquals | gte       |
+| identity          | id, i     |
+| includes          | has       |
+| last              | lst       |
+| lessThan          | lt        |
+| lessThanEquals    | lte       |
+| map               |           |
+| max               |           |
+| median            |           |
+| merge             |           |
+| min               |           |
+| multiply          | mul       |
+| not               |           |
+| notEquals         | neq       |
+| omit              |           |
+| pick              |           |
+| project           | p         |
+| range             |           |
+| reverse           |           |
+| skip              |           |
+| some              | or        |
+| sort              |           |
+| subract           | sub       |
+| sum               | total     |
+| tail              |           |
+| take              |           |
+| union             | u         |
+| unique            | uniq      |
 
 <!-- END OPS -->
 
@@ -150,6 +159,6 @@ fq "map(union(pick(email, name), project(age, meta.age)) | filter(.age > 2)" use
 
 - [ ] Error reporting
 - [ ] Type checking
-- [ ] Reduce/fold operator
-- [ ] Streaming parsing and serializing for large files
-- [ ] Highlight output similar to `jq`
+- [x] Reduce/fold operators
+- [x] Streaming parsing and serializing for large files
+- [x] Highlight output similar to `jq`
