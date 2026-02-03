@@ -438,3 +438,14 @@ export const max = fnOp((fn) => (it) => {
   }
   return result;
 });
+
+export const groupBy = fnOp(
+  (fn) => (it) => {
+    const groups: Record<string, any[]> = {};
+    for (const x of it) {
+      (groups[fn(x)] ??= []).push(x);
+    }
+    return groups;
+  },
+  { alias: ["group"] },
+);
